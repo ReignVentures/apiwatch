@@ -1,5 +1,8 @@
 name: apiwatch scan
 description: Find code that a known API, model, or MCP server change lands on, and gate CI on it.
+branding:
+  icon: eye
+  color: blue
 inputs:
   path:
     description: Directory to scan
