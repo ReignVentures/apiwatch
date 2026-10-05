@@ -1,0 +1,17 @@
+name: move v1
+# Keeps the floating v1 tag on the latest main, so `uses: ReignVentures/apiwatch@v1` gets new records.
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git config user.name "Reign Ventures"
+          git config user.email "39495033+ReignVentures@users.noreply.github.com"
+          git tag -fa v1 -m "apiwatch v1"
+          git push -f origin v1
