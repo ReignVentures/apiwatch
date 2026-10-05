@@ -1,0 +1,48 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-10-02: fix. Supported by the stripe-node 23.0.0 CHANGELOG (#2862), the v23 migration guide and the repo source; added the canonical npm dependency gate.
+# SDK-only change in stripe-node 23.0.0 (CHANGELOG "23.0.0 - 2026-09-30"; GitHub release v23.0.0 published 2026-10-01 00:45 UTC). Not an API change:
+# it bites when the repo moves to stripe-node 23.x. Sources: the SDK CHANGELOG and the v23 migration guide in the repo (.hark/migration-guides/v23.md).
+# repo_context gates on stripe 23 as package.json ('"stripe": "^23' / "~23" / "23"), yarn.lock and pnpm-lock.yaml ("stripe@^23", "stripe@23") write it; package-lock.json is missed (name and version on separate lines).
+# Only the method on the Stripe client instance (added by mistake in 22.5.0) is removed; stripe.webhooks.constructEventWithoutVerification stays,
+# so the bare token is the signature and webhooks.constructEventWithoutVerification is excluded. The CHANGELOG calls it Stripe.constructEventWithoutVerification(),
+# the migration guide stripe.constructEventWithoutVerification(); the bare token covers both and any client variable name.
+id: stripe-2026-09-30-node-sdk-construct-event-without-verification-removed
+vendor: Stripe
+surface: stripe-node 23.0.0 — top-level constructEventWithoutVerification() removed from the Stripe client
+kind: sdk
+severity: breaking
+effective: '2026-09-30'
+summary: stripe-node 23.0.0 removed the top-level constructEventWithoutVerification() method from the Stripe client; use stripe.webhooks.constructEventWithoutVerification() instead
+detail: The method was mistakenly added to the client in version 22.5.0, so only code written against 22.5.0 or later can use it. stripe.webhooks.constructEventWithoutVerification(payload) provides the same functionality and isn't affected.
+signatures:
+- constructEventWithoutVerification
+files:
+- '*.js'
+- '*.mjs'
+- '*.cjs'
+- '*.ts'
+- '*.mts'
+- '*.cts'
+- '*.tsx'
+- '*.jsx'
+repo_context:
+- dep:npm:stripe@23.
+- '"stripe": "^23'
+- '"stripe": "~23'
+- '"stripe": "23'
+- stripe@^23
+- stripe@23
+- stripe@npm:^23
+- stripe@npm:23
+exclude:
+- webhooks.constructEventWithoutVerification
+source_url: https://raw.githubusercontent.com/stripe/stripe-node/master/CHANGELOG.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- Remove Stripe.constructEventWithoutVerification
+- mistakenly added in version 22.5.0 of this package
+- 23.0.0 - 2026-09-30
+- url: https://raw.githubusercontent.com/stripe/stripe-node/master/.hark/migration-guides/v23.md
+  text: const event = stripe.webhooks.constructEventWithoutVerification(payload);
+fix_hint: When moving to stripe-node 23, call stripe.webhooks.constructEventWithoutVerification(payload) instead of stripe.constructEventWithoutVerification(payload).

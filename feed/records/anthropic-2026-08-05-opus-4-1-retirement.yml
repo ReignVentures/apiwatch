@@ -1,0 +1,20 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Added the dated id. claude-opus-4-1 is kept as a stem of it; neither the source nor the SDK lists it as an alias.
+id: anthropic-2026-08-05-opus-4-1-retirement
+vendor: Anthropic
+surface: model claude-opus-4-1-20250805
+kind: model
+severity: breaking
+effective: "2026-08-05"
+summary: Claude Opus 4.1 retired on the Claude API; requests to it now fail
+detail: Deprecated June 5, 2026 and retired August 5, 2026 on Anthropic-operated platforms (Claude API, Claude Platform on AWS, Microsoft Foundry). Bedrock and Google Cloud set their own schedules. Recommended replacement is claude-opus-4-8.
+signatures: ["claude-opus-4-1-20250805", "claude-opus-4-1"]
+source_url: "https://platform.claude.com/docs/en/about-claude/model-deprecations"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "claude-opus-4-1-20250805"
+  - "This model was retired August 5, 2026."
+  - "On June 5, 2026, Anthropic notified developers using Claude Opus 4.1"
+  - "Requests to retired models will fail."
+fix_hint: Move the model id to config; switch to claude-opus-4-8; add a startup check that the configured model resolves.

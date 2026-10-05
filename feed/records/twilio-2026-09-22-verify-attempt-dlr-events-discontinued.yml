@@ -1,0 +1,27 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-09-24: fix. Accurate; replaced 'without an error' (not in the source) with the source's 'even for existing subscriptions'; added evidence for the Message Status replacement named in the fix.
+# Event type strings come from the Event Streams docs page for Verification Attempt DLR (.md twin): com.twilio.accountsecurity.verify.attempt-dlr.{delivered,failed,read,sent,undelivered}. The signature is the shared prefix.
+# 2026-10-02 re-review: the event-type page now marks the attempt-dlr types discontinued (was restricted); dropped the restricted claim.
+id: twilio-2026-09-22-verify-attempt-dlr-events-discontinued
+vendor: Twilio
+surface: Verify Events (Event Streams) Verification Attempt DLR event types com.twilio.accountsecurity.verify.attempt-dlr.*
+kind: rest
+severity: silent
+effective: '2026-09-22'
+summary: Verify Events' Attempt DLR event types were discontinued after September 22, 2026 10:00PM UTC; Twilio may stop sending them even to existing subscriptions
+detail: Twilio discontinued the five com.twilio.accountsecurity.verify.attempt-dlr.* event types (delivered, failed, read, sent, undelivered) after September 22, 2026 10:00PM UTC. From then on Twilio may stop sending these events even to existing subscriptions; other event types in the same subscription keep arriving normally. The event-type docs now mark each one as discontinued.
+signatures:
+- com.twilio.accountsecurity.verify.attempt-dlr
+source_url: https://www.twilio.com/en-us/changelog/verify-events-verification-attempt-DLR-discontinued
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- discontinued after September 22, 2026 at 10:00PM UTC
+- Twilio may stop sending new events for the Attempt DLR event types
+- url: https://www.twilio.com/docs/events/event-types/verify/verification-attempt-dlr.md
+  text: com.twilio.accountsecurity.verify.attempt-dlr.delivered
+- url: https://www.twilio.com/docs/events/event-types/verify/verification-attempt-dlr.md
+  text: This event type has been discontinued
+- url: https://www.twilio.com/docs/events/event-types/verify/message-status.md
+  text: com.twilio.accountsecurity.verify.message.delivered
+fix_hint: Stop depending on attempt-dlr events; the Verify Message Status event types (com.twilio.accountsecurity.verify.message.*) report the delivery outcome of each message attempt. Remove attempt-dlr from subscriptions and alert if expected delivery events stop arriving.

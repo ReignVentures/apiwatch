@@ -1,0 +1,54 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Added get_workflow (the 25th old name, per the alias map) and matched the alias wording to the renaming guide.
+# Removal of the old implementations: v0.31.0 (2026-02-19), PR github/github-mcp-server#1958. Aliases: docs/tool-renaming.md, pkg/github/deprecated_tool_aliases.go.
+# 2026-09-24 notebook review: context now needs github AND mcp in the file: a local search_issues function or PyGithub's get_workflow_run in a GitHub REST file isn't the MCP tool.
+id: github-2026-01-26-mcp-actions-projects-consolidation
+vendor: GitHub MCP Server
+surface: Actions and Projects toolsets — 25 tools folded into actions_list / actions_get / actions_run_trigger / projects_list / projects_get / projects_write
+kind: mcp
+severity: breaking
+effective: '2026-01-26'
+summary: GitHub MCP server replaced its individual Actions and Projects tools with consolidated read/write tools; old names only survive as config aliases
+detail: v0.30.0 made the consolidated tools the default, and v0.31.0 (Feb 19) deleted the old implementations. Old names in --tools flags or X-MCP-Tools headers silently resolve to the consolidated tool, so the config keeps working but registers a tool with a different schema. The renaming guide describes the aliases for server configuration (--tools, X-MCP-Tools). Agents or code that call the old tool names directly, or send the old argument shapes, break.
+signatures:
+- list_workflows
+- list_workflow_runs
+- list_workflow_jobs
+- list_workflow_run_artifacts
+- get_workflow
+- get_workflow_run
+- get_workflow_job
+- get_workflow_run_usage
+- get_workflow_run_logs
+- get_workflow_job_logs
+- download_workflow_run_artifact
+- run_workflow
+- rerun_workflow_run
+- rerun_failed_jobs
+- cancel_workflow_run
+- delete_workflow_run_logs
+- list_projects
+- list_project_fields
+- list_project_items
+- get_project
+- get_project_field
+- get_project_item
+- add_project_item
+- update_project_item
+- delete_project_item
+context:
+- - github
+  - mcp
+source_url: https://github.com/github/github-mcp-server/releases/tag/v0.30.0
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- Projects and Actions tools consolidated to a smaller set of read/write tools
+- Default to consolidated actions/projects toolsets and add hold back flag
+- url: https://api.github.com/repos/github/github-mcp-server/releases/tags/v0.30.0
+  text: '2026-01-26T14:48:13Z'
+- url: https://github.com/github/github-mcp-server/releases/tag/v0.31.0
+  text: Remove old non-consolidated Actions and Projects toolsets
+- url: https://raw.githubusercontent.com/github/github-mcp-server/main/docs/tool-renaming.md
+  text: silently resolving old tool names to their new canonical names
+fix_hint: Replace old tool names with the consolidated tool and its method parameter; re-read the new input schemas; update --tools / X-MCP-Tools to canonical names.

@@ -1,0 +1,22 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Now lists where each slug redirects, notes that billing covers every retired slug, and drops two claims the source doesn't make (output quality, and the response reporting the served model).
+# 2026-09-24: fix_hint now names grok-imagine-image-2.0 for grok-imagine-image-pro, per xAI's November 2 guide (flagged in review).
+id: xai-2026-05-15-grok-model-retirement
+vendor: xAI
+surface: 8 Grok model slugs
+kind: model
+severity: silent
+effective: "2026-05-15"
+summary: Retired Grok slugs still resolve but redirect to other models, so the model served and the bill change silently
+detail: From May 15, 2026 12:00 PM PT, requests to the retired slugs redirect instead of erroring. grok-4-1-fast-reasoning, grok-4-fast-reasoning and grok-4-0709 go to grok-4.3 at low reasoning effort; grok-4-1-fast-non-reasoning, grok-4-fast-non-reasoning and grok-3 go to grok-4.3 at none; grok-code-fast-1 goes to grok-build-0.1; grok-imagine-image-pro goes to grok-imagine-image-quality, which is itself retired November 2, 2026. xAI says requests to a retired slug after May 15 are billed at grok-4.3 pricing ($1.25 per 1M input, $2.50 per 1M output).
+signatures: ["grok-4-1-fast-reasoning", "grok-4-1-fast-non-reasoning", "grok-4-fast-reasoning", "grok-4-fast-non-reasoning", "grok-4-0709", "grok-code-fast-1", "grok-3", "grok-imagine-image-pro"]
+source_url: "https://docs.x.ai/developers/migration/may-15-retirement"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - {"url": "https://docs.x.ai/developers/migration/imagine-image-quality-nov-2", "text": "Requests to grok-imagine-image-pro, which already redirect"}
+  - "Grok Model Retirement on May 15, 2026"
+  - "May 15, 2026 at 12:00 PM PT"
+  - "will automatically redirect to grok-4.3"
+  - "billed at grok-4.3 pricing"
+fix_hint: "Set the model explicitly instead of relying on the redirect: grok-4.3 with an explicit reasoning_effort, grok-build-0.1 for code, and grok-imagine-image-2.0 for grok-imagine-image-pro (its redirect target, grok-imagine-image-quality, retires November 2, 2026)."

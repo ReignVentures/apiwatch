@@ -1,0 +1,53 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-10-02: fix. Facts match the v23 migration guide, the 23.0.0 CHANGELOG (#2876) and src/Webhooks.ts. Severity silent -> breaking: stale payloads now throw StripeSignatureVerificationError. Added CHANGELOG date evidence; past tense; fix notes that calls passing a tolerance are unaffected.
+# SDK-only change in stripe-node 23.0.0 (CHANGELOG "23.0.0 - 2026-09-30", PR #2876; GitHub release v23.0.0 published 2026-10-01 00:45 UTC). Not an API change:
+# it bites when the repo moves to stripe-node 23.x. Sources: the SDK CHANGELOG and the v23 migration guide (.hark/migration-guides/v23.md).
+# repo_context: "dep:stripe@23." is the canonical dependency gate (any manifest or lockfile pinning stripe 23.x); the raw package.json/yarn/pnpm forms are kept as a fallback.
+# Silent: no API error. Fresh webhooks still verify; payloads whose timestamp is older than the default tolerance (replayed, queued or test fixtures) now fail verification.
+# Signatures are the two method names (token match: verifyHeader doesn't hit verifyHeaderAsync); a hit that already passes a tolerance argument isn't affected.
+# The same PR also changes constructEvent: passing tolerance 0 now skips the timestamp check instead of applying the default. That part is in the detail only;
+# there's no clean signature for a literal 0 argument.
+id: stripe-2026-09-30-node-sdk-verify-header-default-tolerance
+vendor: Stripe
+surface: stripe-node 23.0.0 — stripe.webhooks.signature.verifyHeader() / verifyHeaderAsync() default timestamp tolerance (and constructEvent with tolerance 0)
+kind: sdk
+severity: breaking
+effective: '2026-09-30'
+summary: stripe-node 23.0.0 made stripe.webhooks.signature.verifyHeader() and verifyHeaderAsync() check the event timestamp against Webhook.DEFAULT_TOLERANCE when no tolerance is passed; before, they skipped the check.
+detail: After upgrading, calls that omit the tolerance argument throw StripeSignatureVerificationError for payloads whose timestamp is older than the default tolerance (300 seconds). Stripe says this mainly affects tests or offline processing, and passing 0 keeps the old behavior. In the same release, passing 0 as the tolerance to stripe.webhooks.constructEvent now skips timestamp verification, where it previously applied the default tolerance.
+signatures:
+- verifyHeader
+- verifyHeaderAsync
+context:
+- stripe
+files:
+- '*.js'
+- '*.mjs'
+- '*.cjs'
+- '*.ts'
+- '*.mts'
+- '*.cts'
+- '*.tsx'
+- '*.jsx'
+repo_context:
+- dep:npm:stripe@23.
+- '"stripe": "^23'
+- '"stripe": "~23'
+- '"stripe": "23'
+- stripe@^23
+- stripe@23
+- stripe@npm:^23
+- stripe@npm:23
+source_url: https://raw.githubusercontent.com/stripe/stripe-node/master/.hark/migration-guides/v23.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- previously skipped timestamp tolerance verification when the `tolerance` argument was omitted
+- pass `0` explicitly to preserve that behavior
+- url: https://raw.githubusercontent.com/stripe/stripe-node/master/CHANGELOG.md
+  text: 23.0.0 - 2026-09-30
+- url: https://raw.githubusercontent.com/stripe/stripe-node/master/CHANGELOG.md
+  text: Update verifyHeader and verifyHeaderAsync methods to use DEFAULT_TOLERANCE
+- url: https://raw.githubusercontent.com/stripe/stripe-node/master/CHANGELOG.md
+  text: Passing 0 to stripe.webhooks.constructEvent now properly skips timestamp tolerance verification.
+fix_hint: Before moving to stripe-node 23, find verifyHeader/verifyHeaderAsync calls that omit the tolerance argument. Keep the new default for webhooks verified as they arrive. Pass 0 only where you verify old payloads on purpose (test fixtures, replays, offline processing). Calls that already pass a tolerance are unaffected. Also review any constructEvent call that passes 0, since that now turns the timestamp check off.

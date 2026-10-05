@@ -1,0 +1,24 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Detail now names the incomplete-result signal and softens the cursor claim; fix_hint uses request_status.
+# Corrected: the seed record cited a "2026-04-01" API version. There is none; the latest is 2026-03-11. The real changes are two changelog entries.
+# Cursor entry: April 22, 2026, same changelog page. The seed also claimed a RateLimit-Reset format change. No Notion source found for it, so it was dropped.
+id: notion-2026-04-20-query-pagination-cap
+vendor: Notion
+surface: Query a data source / view query endpoints — pagination depth and cursor format
+kind: rest
+severity: silent
+effective: "2026-04-20"
+summary: Data source and view queries stop paginating at 10,000 results; start_cursor may now be an opaque string instead of a UUID
+detail: As of April 20, 2026, Query a data source, Create a view query, and Get view query results enforce a max pagination depth of 10,000 results per query, so "fetch all rows" syncs on large databases truncate; the response carries request_status.type "incomplete" (incomplete_reason query_result_limit_reached). As of April 22, 2026, start_cursor accepts opaque strings as well as UUIDs; cursors now embed a session identifier, so code that validates or parses cursors as UUIDs can fail.
+signatures: ["start_cursor", "next_cursor", "/v1/data_sources", "dataSources.query", "data_sources.query"]
+context: ["notion"]   # generic signatures only count in files that mention notion
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "10,000 results per query"
+  - "query_result_limit_reached"
+  - "accepts opaque string values in addition to UUIDs"
+  - "April 20, 2026"
+  - "April 22, 2026"
+fix_hint: Stop assuming exhaustive pagination; check request_status.type for "incomplete" and split the query by filter (e.g. date ranges); treat cursors as opaque strings.

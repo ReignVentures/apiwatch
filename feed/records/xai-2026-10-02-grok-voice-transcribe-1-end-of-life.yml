@@ -1,0 +1,21 @@
+# Authored by Claude on 2026-10-05 from the xAI release notes (October entry "grok-voice-transcribe-1.0 end of life", September entry "Grok Voice Transcribe 2.0"). Independent review (docs/REVIEW.md) on 2026-10-05: pass against the release notes and Speech to Text pages; one wording fix applied (the September date comes from the release notes, not a stated year).
+# No exclude: token-aware matching does not hit grok-voice-transcribe-2.0 with this signature (checked with attribute.scan).
+id: xai-2026-10-02-grok-voice-transcribe-1-end-of-life
+vendor: xAI
+surface: speech-to-text model grok-voice-transcribe-1.0
+kind: model
+severity: silent
+effective: "2026-10-02"
+summary: grok-voice-transcribe-1.0 reached end of life on October 2, 2026; requests to the slug are routed to grok-voice-transcribe-2.0 at the same price
+detail: "xAI's release notes say grok-voice-transcribe-1.0 is deprecated and reaches end of life on October 2, 2026, and that all requests to that slug are routed to grok-voice-transcribe-2.0 at the same price, with higher accuracy. The source does not say requests fail, so calls keep working but are served by a different model, and transcripts may differ. grok-voice-transcribe-2.0 was announced in the September release notes and is the default model; the Speech to Text docs now list only grok-voice-transcribe-2.0."
+signatures: ["grok-voice-transcribe-1.0"]
+source_url: "https://docs.x.ai/developers/release-notes"
+verified: true
+verified_by: claude
+verified_on: "2026-10-05"
+evidence:
+  - "grok-voice-transcribe-1.0 end of life"
+  - "reaches end of life on October 2, 2026"
+  - "routed to grok-voice-transcribe-2.0 at the same price"
+  - {url: "https://docs.x.ai/developers/model-capabilities/audio/speech-to-text", text: "grok-voice-transcribe-2.0 (default)."}
+fix_hint: Set the model to grok-voice-transcribe-2.0 explicitly (or omit model to get the default, grok-voice-transcribe-2.0) and re-check any tests or downstream logic that depend on exact transcript output.

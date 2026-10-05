@@ -1,0 +1,36 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. "Every gpt-5.x-codex variant" was wrong, because gpt-5.3-codex is still current. Fragment signatures were replaced with full ids.
+# 2026-10-02 excludes Google's gemini-2.5-computer-use-preview-10-2025 (computer-use-preview matched inside it).
+id: openai-2026-07-23-legacy-snapshots-shutdown
+vendor: OpenAI
+surface: gpt-5-chat-latest, gpt-5.1-chat-latest, gpt-5 / gpt-5.1 / gpt-5.2 codex models, gpt-4o(-mini)-search-preview, computer-use-preview, o3/o4-mini deep-research, gpt-audio-mini and gpt-realtime-mini 2025-10-06 snapshots
+kind: model
+severity: breaking
+effective: '2026-07-23'
+summary: 14 OpenAI models shut down July 23, 2026, including gpt-5-chat-latest and the gpt-5, gpt-5.1 and gpt-5.2 codex models
+detail: Announced April 22, 2026. Shut down July 23, 2026 — computer-use-preview(-2025-03-11), gpt-4o-search-preview-2025-03-11, gpt-4o-mini-search-preview-2025-03-11, gpt-5-chat-latest, gpt-5.1-chat-latest, gpt-5-codex, gpt-5.1-codex, gpt-5.1-codex-max, gpt-5.1-codex-mini, gpt-5.2-codex, gpt-audio-mini-2025-10-06, gpt-realtime-mini-2025-10-06, o3-deep-research(-2025-06-26), o4-mini-deep-research(-2025-06-26). Substitutes are mostly gpt-5.6-sol or gpt-5.6-terra; audio and realtime move to gpt-audio-1.5 and gpt-realtime-2.1-mini.
+signatures:
+- gpt-5-chat-latest
+- gpt-5.1-chat-latest
+- gpt-5-codex
+- gpt-5.1-codex
+- gpt-5.2-codex
+- computer-use-preview
+- gpt-4o-search-preview-2025-03-11
+- gpt-4o-mini-search-preview-2025-03-11
+- o3-deep-research
+- o4-mini-deep-research
+- gpt-audio-mini-2025-10-06
+- gpt-realtime-mini-2025-10-06
+exclude:
+- gpt-5-codex-mini
+- gemini-2.5-computer-use-preview-10-2025
+source_url: https://developers.openai.com/api/docs/deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- Legacy GPT model snapshots (July 2026 shutdown)
+- Access to these models was shut down on July 23, 2026.
+- gpt-5.1-codex-max
+- o4-mini-deep-research-2025-06-26
+fix_hint: Switch to the substitute listed per model; coding-agent configs that pinned a codex model are the most likely place these hide.

@@ -1,0 +1,14 @@
+# UNVERIFIED: illustrative record, not a real vendor change. ExampleDocs MCP does not exist, so there is no primary source. Keep it out of the public feed.
+id: example-mcp-2026-09-01-tool-rename
+vendor: ExampleDocs MCP
+surface: MCP tool search_documents → query_documents
+kind: mcp
+severity: breaking
+effective: "2026-09-01"
+summary: Tool renamed; agents calling search_documents get tool-not-found and tell users nothing was found
+detail: Illustrative record for the MCP failure mode. The agent reports an empty result instead of an integration error.
+signatures: ["search_documents"]
+source_url: ""
+verified: false
+illustrative: true
+fix_hint: Read tools/list at startup; fail loudly on missing tools; map old names to new in one place.

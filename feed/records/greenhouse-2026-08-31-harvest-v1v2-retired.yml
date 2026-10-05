@@ -1,0 +1,23 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. "Removed after" became "removed on", as the source says. Dropped /v2/candidates, which doesn't exist, and added /v1/applications.
+# Pagination and auth details: https://harvestdocs.greenhouse.io/docs/pagination , https://harvestdocs.greenhouse.io/docs/authentication
+id: greenhouse-2026-08-31-harvest-v1v2-retired
+vendor: Greenhouse
+surface: Harvest API v1/v2
+kind: rest
+severity: breaking
+effective: "2026-08-31"
+summary: Harvest v1/v2 removed on August 31, 2026; integrations must be on v3 (OAuth + cursor pagination)
+detail: v1/v2 used Basic Auth with an API token; v3 requires an OAuth 2.0 bearer token (client credentials for custom integrations). v3 list endpoints page with an opaque cursor taken from the Link header's rel="next". A request that carries a cursor must have no other query params, so filters and per_page carried over from page-number loops break.
+signatures: ["harvest.greenhouse.io/v1", "harvest.greenhouse.io/v2", "/v1/candidates", "/v1/applications"]
+context: ["greenhouse"]   # generic signatures only count in files that mention greenhouse
+source_url: "https://docs.greenhouse.io/harvest.html"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "will be removed on August 31, 2026"
+  - "Please migrate to Harvest v3"
+  - "Harvest uses Basic Auth over HTTPS"
+  - {"url": "https://harvestdocs.greenhouse.io/docs/pagination.md", "text": "it must be the only query parameter"}
+  - {"url": "https://harvestdocs.greenhouse.io/docs/authentication.md", "text": "OAuth will be the only supported authentication method"}
+fix_hint: Move to v3 and OAuth client credentials; follow the Link rel="next" URL exactly instead of building page/per_page URLs; add a fixture for the last page.

@@ -1,0 +1,21 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. The record said the field stays but is always null; the source says the field is removed, and every call returns attributes: null.
+id: twilio-2026-08-01-conference-participant
+vendor: Twilio
+surface: Voice Insights Call Summary conference_participant (REST API and Event Streams)
+kind: rest
+severity: silent
+effective: "2026-08-01"
+summary: "conference_participant removed from Voice Insights Call Summary on August 1, 2026; all calls now return attributes: null"
+detail: "Announced July 1, 2026. Removed from the REST API and Event Streams on August 1, 2026. Before, it was populated only for calls eligible to join a Twilio conference and all others returned attributes: null; after removal every call returns attributes: null. Logic that assumes the data is present silently degrades."
+signatures: ["conference_participant"]
+context: ["twilio"]   # generic signatures only count in files that mention twilio
+source_url: "https://www.twilio.com/en-us/changelog/voice-insights-removal-conference-participant-field"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "Jul. 01, 2026"
+  - "Removal of conference_participant field"
+  - "REST API and Event Streams August 1, 2026"
+  - "all calls will uniformly return attributes: null"
+fix_hint: Source conference data from the Conference Insights API or Conference Insights Event Streams; add a test for the null case.

@@ -1,0 +1,20 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Removed the vector-compatibility claims; Google states them only for gemini-embedding-001 → gemini-embedding-2. The re-embed fix is kept as safe advice.
+id: google-2026-01-14-text-embedding-004-shutdown
+vendor: Google
+surface: Gemini API embedding model text-embedding-004
+kind: model
+severity: breaking
+effective: "2026-01-14"
+summary: text-embedding-004 shut down on the Gemini API January 14, 2026; replacement is gemini-embedding-2
+detail: Google's deprecations page lists January 14, 2026 as the shutdown date, with gemini-embedding-2 as the replacement; the changelog records the shutdown on that date. Once a model is shut down its endpoint is no longer available.
+signatures: ["text-embedding-004"]
+source_url: "https://ai.google.dev/gemini-api/docs/deprecations"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "text-embedding-004"
+  - "January 14, 2026"
+  - "gemini-embedding-2"
+  - {"url": "https://ai.google.dev/gemini-api/docs/changelog.md.txt", "text": "The text-embedding-004 model will be shut down January 14, 2026"}
+fix_hint: Re-embed the whole corpus with gemini-embedding-2 into a new index, check dimensions, cut over atomically, and record the embedding model id with every stored vector.

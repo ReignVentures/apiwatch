@@ -1,0 +1,25 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Named the SDK majors in the summary, removed an unsupported double-conversion claim, added flat_amount_decimal, and rewrote the fix to compare with Decimal.
+# Corrected: the seed record said the 2026-04-22 API release changed unit_amount_decimal. The API wire format is still a decimal string.
+# The type change is in the official SDKs' Dahlia majors (pinned to 2026-03-25.dahlia): stripe-python v15.0.0 and stripe-node v21.0.0.
+# Migration guide: https://github.com/stripe/stripe-python/wiki/Migration-guide-for-v15 . Node release: https://github.com/stripe/stripe-node/releases/tag/v21.0.0
+id: stripe-2026-03-26-sdk-decimal-type
+vendor: Stripe
+surface: Stripe SDKs (stripe-python v15, stripe-node v21) — decimal_string fields such as unit_amount_decimal
+kind: sdk
+severity: silent
+effective: "2026-03-26"
+summary: stripe-python v15 and stripe-node v21 return unit_amount_decimal and other decimal_string fields as Decimal, not string; string equality checks silently go false
+detail: The JSON on the wire is unchanged. The SDKs now parse decimal_string fields (unit_amount_decimal, quantity_decimal, fx_rate, ...) into decimal.Decimal (Python) or Stripe.Decimal (Node). Code like unit_amount_decimal == "1000" returns false without an error.
+signatures: ["unit_amount_decimal", "flat_amount_decimal", "quantity_decimal", "fx_rate"]
+context: ["stripe"]   # generic signatures only count in files that mention stripe
+source_url: "https://github.com/stripe/stripe-python/releases/tag/v15.0.0"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "2026-03-25.dahlia"
+  - "Add decimal_string coercion for v1 and v2 API fields"
+  - "changed type from str to decimal.Decimal"
+  - {"url": "https://github.com/stripe/stripe-python/wiki/Migration-guide-for-v15", "text": "Code that compares decimal field values using string equality will break"}
+  - {"url": "https://github.com/stripe/stripe-node/releases/tag/v21.0.0", "text": "changed type from string to Stripe.Decimal"}
+fix_hint: Compare with Decimal("…") in Python or Stripe.Decimal in Node, not strings; pass Decimal values in request params; add a fixture with the new type before bumping the SDK major.

@@ -1,0 +1,21 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Removed an unsupported claim about how agents react. Atlassian files the entry under "Fixed"; it's still breaking, because it is a rename with no alias.
+id: atlassian-2026-09-22-mcp-assignable-users-rename
+vendor: Atlassian Rovo MCP
+surface: MCP tool findJiraIssueAssignableUsers → listJiraIssueAssignableUsers (read_jira toolset)
+kind: mcp
+severity: breaking
+effective: "2026-09-22"
+summary: Rovo MCP renamed findJiraIssueAssignableUsers to listJiraIssueAssignableUsers
+detail: "Atlassian's changelog (22 Sep 2026) says findJiraIssueAssignableUsers in the read_jira toolset has been renamed to listJiraIssueAssignableUsers, and mentions no alias. Tool calls, allowlists, or prompts that use the old name no longer match a listed tool."
+signatures: ["findJiraIssueAssignableUsers"]
+source_url: "https://developer.atlassian.com/cloud/rovo-mcp/changelog/"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "22 September 2026"
+  - "findJiraIssueAssignableUsers"
+  - "listJiraIssueAssignableUsers"
+  - "The tool has now been renamed to"
+  - "read_jira"
+fix_hint: Use listJiraIssueAssignableUsers; read tools/list at startup and fail loudly when a tool the agent depends on is missing.

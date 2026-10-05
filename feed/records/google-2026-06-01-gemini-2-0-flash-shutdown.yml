@@ -1,0 +1,32 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Signatures now list the exact ids. The June 1 changelog names gemini-3.5-flash as the replacement; the table now lists gemini-3.6-flash, and the record follows the table.
+# Source covers the Gemini API (ai.google.dev). Vertex AI publishes its own schedule.
+# 2026-09-24: excludes 2.0 ids that 2025 records date earlier (Nov 14, Dec 2, Dec 9).
+id: google-2026-06-01-gemini-2-0-flash-shutdown
+vendor: Google
+surface: Gemini API models gemini-2.0-flash, gemini-2.0-flash-001, gemini-2.0-flash-lite, gemini-2.0-flash-lite-001
+kind: model
+severity: breaking
+effective: '2026-06-01'
+summary: Gemini 2.0 Flash and Flash-Lite shut down on the Gemini API June 1, 2026
+detail: Google's deprecations page lists June 1, 2026 as the shutdown date for gemini-2.0-flash and gemini-2.0-flash-001 (replacement gemini-3.6-flash) and gemini-2.0-flash-lite and gemini-2.0-flash-lite-001 (replacement gemini-3.1-flash-lite). Once a model is shut down its endpoint is no longer available.
+signatures:
+- gemini-2.0-flash
+- gemini-2.0-flash-001
+- gemini-2.0-flash-lite
+- gemini-2.0-flash-lite-001
+exclude:
+- gemini-2.0-flash-preview-image-generation
+- gemini-2.0-flash-exp
+- gemini-2.0-flash-thinking-exp
+- gemini-2.0-flash-lite-preview
+- gemini-2.0-flash-live-001
+source_url: https://ai.google.dev/gemini-api/docs/deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- gemini-2.0-flash-001
+- gemini-2.0-flash-lite-001
+- June 1, 2026
+- gemini-3.6-flash
+fix_hint: Switch to gemini-3.6-flash / gemini-3.1-flash-lite; re-check cost and output quality on your evals before switching.

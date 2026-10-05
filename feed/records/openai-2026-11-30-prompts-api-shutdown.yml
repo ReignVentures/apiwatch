@@ -1,0 +1,20 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. The detail now matches the migration guide, and the fix no longer names an export feature that doesn't exist. pmpt_ is confirmed in the guide's examples.
+id: openai-2026-11-30-prompts-api-shutdown
+vendor: OpenAI
+surface: v1/prompts API and reusable prompt objects
+kind: rest
+severity: breaking
+effective: "2026-11-30"
+summary: OpenAI reusable prompt objects and the v1/prompts API shut down November 30, 2026
+detail: Announced June 3, 2026, when prompt creation was also de-emphasized in the platform. The v1/prompts API and reusable prompt objects are scheduled to shut down; Responses API requests that pass a saved prompt object (id pmpt_…) should send the prompt through input instead. OpenAI's migration path is to move the prompt content into application code.
+signatures: ["v1/prompts", "pmpt_"]
+source_url: "https://developers.openai.com/api/docs/deprecations"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "2026-06-03: Reusable prompts"
+  - "Nov 30, 2026"
+  - {"url": "https://developers.openai.com/api/docs/guides/prompting/migrate-from-prompt-object.md", "text": "v1/prompts is scheduled to shut down on November 30, 2026"}
+  - {"url": "https://developers.openai.com/api/docs/guides/prompting/migrate-from-prompt-object.md", "text": "pmpt_123"}
+fix_hint: Copy each referenced prompt's content and variables into versioned code, build the messages there and pass them as input; add a test that renders each prompt locally.

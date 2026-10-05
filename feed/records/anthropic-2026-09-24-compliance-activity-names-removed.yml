@@ -1,0 +1,32 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-10-02: fix. Facts check out against the Compliance Activity Feed docs and the Sep 24 release note. Excluded .title( (str.title(), plt.title()); past tense; the fix names every metadata endpoint.
+# Lead: GitHub issue #2 (release notes, September 24, 2026). No request fails: the fields come back null, empty or missing, so this is silent.
+# filename/title are generic field names, so hits count only in files that mention both "compliance" and "activit" (activity/activities).
+# Known limit: a handler in a file that names neither word (e.g. a generic event mapper fed by a separate client module) is missed.
+id: anthropic-2026-09-24-compliance-activity-names-removed
+vendor: Anthropic
+surface: Compliance API GET /v1/compliance/activities — filename and title on file, project document and artifact activities
+kind: rest
+severity: silent
+effective: '2026-09-24'
+summary: On September 24, 2026 the Compliance API Activity Feed stopped returning file names, project document names and artifact titles; filename and title on those activities are now always null, empty or omitted
+detail: The filename and title fields on file, project document and artifact activities are always null, an empty string, or omitted, including on activities recorded before September 24, 2026. To get a name or title, pass the activity's claude_file_*, claude_proj_doc_* or claude_artifact_version_* ID to the matching metadata endpoint with a Compliance Access Key that has the read:compliance_user_data scope; the lookup fails once the item is deleted or when the activity has no such ID.
+signatures:
+- filename
+- title
+context:
+- - compliance
+  - activit
+exclude:
+- .title(
+source_url: https://platform.claude.com/docs/en/manage-claude/compliance-activity-feed.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- As of September 24, 2026
+- the `filename` and `title` fields on these activities are always `null`
+- including on activities recorded before that date
+- read:compliance_user_data
+- url: https://platform.claude.com/docs/en/release-notes/overview.md
+  text: no longer returns file names, project document names, or artifact titles
+fix_hint: Stop reading names from activity filename/title. Look each one up by the activity's claude_file_*, claude_proj_doc_* or claude_artifact_version_* ID through the matching Compliance API file, project document or artifact metadata endpoint, using a key with read:compliance_user_data. Handle items that are deleted or have no ID.

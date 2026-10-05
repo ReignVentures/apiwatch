@@ -1,0 +1,22 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: pass, no changes. Neither source names a beta-only endpoint or event, so realtime=v1 is the only signature (GAPS).
+# Written by Claude on 2026-09-24 from the deprecations page and the Realtime guide's "Beta to GA migration" section.
+id: openai-2026-05-12-realtime-api-beta-removed
+vendor: OpenAI
+surface: "Realtime API beta interface (header OpenAI-Beta: realtime=v1)"
+kind: rest
+severity: breaking
+effective: "2026-05-12"
+summary: OpenAI removed the Realtime API beta interface on May 12, 2026; clients that still send OpenAI-Beta realtime=v1 must move to the GA interface
+detail: "Deprecated in September 2025 and removed from the API on May 12, 2026, with the GA Realtime API as the replacement. OpenAI's migration notes list the main differences: drop the OpenAI-Beta: realtime=v1 header, create browser or mobile credentials with POST /v1/realtime/client_secrets, use /v1/realtime/calls for WebRTC, and update session and event shapes (set session.type, move output audio settings under session.audio.output, and use event names such as response.output_audio.delta)."
+signatures: ["realtime=v1"]
+source_url: "https://developers.openai.com/api/docs/deprecations"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "OpenAI-Beta: realtime=v1"
+  - "2026-05-12"
+  - "Realtime API beta was deprecated and removed"
+  - {"url": "https://developers.openai.com/api/docs/guides/realtime.md", "text": "POST /v1/realtime/client_secrets"}
+  - {"url": "https://developers.openai.com/api/docs/guides/realtime.md", "text": "response.output_audio.delta"}
+fix_hint: Remove the OpenAI-Beta realtime=v1 header, mint ephemeral keys with /v1/realtime/client_secrets, connect WebRTC through /v1/realtime/calls, and update session config and event handlers to the GA shapes in OpenAI's Realtime guide; test a full voice session end to end.

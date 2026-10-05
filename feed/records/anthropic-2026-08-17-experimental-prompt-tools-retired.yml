@@ -1,0 +1,24 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-09-24: fix. Content correct. Dropped the /v1/ prefix from signatures so base-URL joins also match; added the announcement date as evidence. No API replacement is named.
+id: anthropic-2026-08-17-experimental-prompt-tools-retired
+vendor: Anthropic
+surface: REST /v1/experimental/generate_prompt, /v1/experimental/improve_prompt, /v1/experimental/templatize_prompt
+kind: rest
+severity: breaking
+effective: '2026-08-17'
+summary: The experimental prompt tools APIs (generate, improve, templatize prompt) were retired on August 17, 2026; requests to them now return an error
+detail: 'Announced July 17, 2026: /v1/experimental/generate_prompt, /v1/experimental/improve_prompt and /v1/experimental/templatize_prompt were retired along with the legacy Workbench on August 17, 2026. After removal, requests to these endpoints return an error.'
+signatures:
+- experimental/generate_prompt
+- experimental/improve_prompt
+- experimental/templatize_prompt
+source_url: https://platform.claude.com/docs/en/release-notes/overview.md
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- /v1/experimental/generate_prompt
+- /v1/experimental/templatize_prompt
+- are being retired along with the Workbench on August 17, 2026
+- requests to these endpoints will return an error
+- July 17, 2026
+fix_hint: Remove calls to these endpoints and handle their absence; the release notes name no API replacement.

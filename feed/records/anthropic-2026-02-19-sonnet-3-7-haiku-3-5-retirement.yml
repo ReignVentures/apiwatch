@@ -1,0 +1,22 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Added the dated ids and the -latest aliases (the aliases come from the official SDK's model list).
+id: anthropic-2026-02-19-sonnet-3-7-haiku-3-5-retirement
+vendor: Anthropic
+surface: models claude-3-7-sonnet-20250219 / claude-3-5-haiku-20241022
+kind: model
+severity: breaking
+effective: "2026-02-19"
+summary: Claude Sonnet 3.7 and Haiku 3.5 retired on the Claude API; requests to them now fail
+detail: Sonnet 3.7 was deprecated October 28, 2025 and Haiku 3.5 December 19, 2025; both retired February 19, 2026 on Anthropic-operated platforms. Recommended replacements are claude-sonnet-4-6 and claude-haiku-4-5-20251001.
+signatures: ["claude-3-7-sonnet-20250219", "claude-3-5-haiku-20241022", "claude-3-7-sonnet-latest", "claude-3-5-haiku-latest", "claude-3-7-sonnet", "claude-3-5-haiku"]
+source_url: "https://platform.claude.com/docs/en/about-claude/model-deprecations"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "claude-3-7-sonnet-20250219"
+  - "claude-3-5-haiku-20241022"
+  - "This model was retired February 19, 2026."
+  - "Requests to retired models will fail."
+  - {"url": "https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/v0.64.0/src/anthropic/types/model.py", "text": "claude-3-7-sonnet-latest"}
+  - {"url": "https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/v0.64.0/src/anthropic/types/model.py", "text": "claude-3-5-haiku-latest"}
+fix_hint: Switch to claude-sonnet-4-6 / claude-haiku-4-5-20251001; move model ids to config.

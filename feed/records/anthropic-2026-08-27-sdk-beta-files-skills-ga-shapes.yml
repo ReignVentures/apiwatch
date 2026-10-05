@@ -1,0 +1,32 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-09-24: fix. Severity silent -> breaking: before_id/after_id return 400 without the header, and Python 1.2.0 drops keywords, so calls fail after upgrade. Summary names the releases and date; added date evidence.
+# Only bites when a project upgrades to one of the named SDK releases (a minor bump in Python, so a loose version range pulls it in). Requests that still send the beta headers explicitly keep the beta shapes.
+id: anthropic-2026-08-27-sdk-beta-files-skills-ga-shapes
+vendor: Anthropic
+surface: SDK client.beta.files / client.beta.skills (Python 1.2.0, TypeScript 0.122.0, Go 1.68.0, Java 2.59.0, Ruby 1.67.0, C# 12.44.0)
+kind: sdk
+severity: breaking
+effective: '2026-08-27'
+summary: Anthropic SDK releases of August 27, 2026 (Python 1.2.0, TypeScript 0.122.0, Go 1.68.0, Java 2.59.0, Ruby 1.67.0, C# 12.44.0) switched client.beta.files and client.beta.skills to the GA shapes; beta cursor pagination fails and client.beta.skills.delete() now deletes a Skill with all its versions
+detail: 'The beta namespaces no longer send files-api-2025-04-14 or skills-2025-10-02, so responses switch to the GA shapes: list responses become { data, next_page } (before_id/after_id return a 400), file objects gain expires_at, and skills use display_name, latest_version_id, skver_ version ids and an object source. Deleting a skill that has versions used to return a 400; it now deletes the skill and every version. In the beta Messages types, BetaSkill is renamed BetaContainerSkill and BetaSkill now names the Skill resource; requests that still send the beta headers keep the beta shapes.'
+signatures:
+- beta.files
+- beta.skills
+- Beta.Files
+- Beta.Skills
+- beta().files()
+- beta().skills()
+- BetaSkill
+context:
+- anthropic
+source_url: https://platform.claude.com/docs/en/release-notes/overview.md
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- client.beta.files and client.beta.skills no longer send
+- deletes a Skill together with all of its versions
+- is renamed BetaContainerSkill
+- August 27, 2026
+- url: https://platform.claude.com/docs/en/build-with-claude/files.md
+  text: Starting with Python SDK 1.2.0, TypeScript SDK 0.122.0
+fix_hint: Before upgrading, switch to client.files / client.skills, replace before_id/after_id loops with page/next_page, rename display_title to display_name and latest_version to latest_version_id, store skver_ version ids instead of epoch versions, read source.type, and add your own guard before skills.delete(); or stay on an earlier SDK release until migrated.

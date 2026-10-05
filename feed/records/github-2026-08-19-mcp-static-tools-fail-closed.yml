@@ -1,0 +1,34 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-09-24: fix. Overstated scope: issue #2933 and PR #3050 show only HTTP server mode fell back to the full tool list (stdio already failed at startup). Summary, detail, surface and fix now say HTTP mode only.
+# PR github/github-mcp-server#3050 fixes issue #2933 (the HTTP static-inventory path fell back to the full tool inventory on an invalid --tools entry).
+# GITHUB_TOOLS is the env-var form of --tools (README at v1.10.0). Old consolidated Actions/Projects names still resolve via aliases (see github-2026-01-26 record), so they aren't "unknown".
+# 2026-09-24 attribution review: stdio configs (unaffected: they already failed at startup) are excluded in the common mcp.json form.
+id: github-2026-08-19-mcp-static-tools-fail-closed
+vendor: GitHub MCP Server
+surface: Server configuration --tools / GITHUB_TOOLS in HTTP server mode — unknown tool names
+kind: mcp
+severity: breaking
+effective: '2026-08-19'
+summary: From v1.10.0, the GitHub MCP server in HTTP mode refuses to start when the static --tools list contains an unknown tool name, instead of falling back to the full tool inventory
+detail: 'Issue #2933 reported that the HTTP server''s static-inventory path replaced an invalid --tools entry with the full tool inventory, although the README says invalid tool names cause startup failure. v1.10.0 (PR #3050) propagates the validation error, so an HTTP-mode deployment with an unknown name in --tools or GITHUB_TOOLS that used to start with every tool exposed now fails to start. The fix is confined to the HTTP server path.'
+signatures:
+- --tools
+- GITHUB_TOOLS
+context:
+- github-mcp-server
+exclude:
+- '"stdio", "--tools"'
+source_url: https://github.com/github/github-mcp-server/releases/tag/v1.10.0
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- Unknown static `--tools` names now prevent startup.
+- url: https://api.github.com/repos/github/github-mcp-server/releases/tags/v1.10.0
+  text: '2026-08-19T17:36:14Z'
+- url: https://github.com/github/github-mcp-server/pull/3050
+  text: was previously falling back to the full tool inventory
+- url: https://github.com/github/github-mcp-server/issues/2933
+  text: HTTP static --tools validation falls back to the full static inventory
+- url: https://raw.githubusercontent.com/github/github-mcp-server/v1.10.0/README.md
+  text: GITHUB_TOOLS="get_file_contents,issue_read,create_pull_request"
+fix_hint: Before upgrading an HTTP-mode deployment to v1.10.0, check every name in --tools / GITHUB_TOOLS against the server's current tool list and correct or remove unknown names; while a name was invalid, that deployment was exposing the full tool inventory.

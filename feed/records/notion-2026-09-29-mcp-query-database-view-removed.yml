@@ -1,0 +1,23 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-10-02: pass. Matches the Sep 29 changelog entry word for word; separate removal step after the Aug 13 deprecation (same signature by design, allowlisted).
+# Lead: GitHub issue #5. Follow-up to notion-2026-08-13-mcp-query-database-view-dropped (deprecation: hidden from tools/list Aug 13, still callable); this entry is the removal.
+# Same signature as that record on purpose: both changes land on the same call sites. The pair needs the SAME_SURFACE allowlist in tests/test_records.py (both directions).
+id: notion-2026-09-29-mcp-query-database-view-removed
+vendor: Notion MCP
+surface: MCP tool notion-query-database-view → notion-query-data-sources (mode "view")
+kind: mcp
+severity: breaking
+effective: '2026-09-29'
+summary: notion-query-database-view was removed from Notion MCP on September 29, 2026; calls to it now return a tool error
+detail: 'Completes the query tool update announced in August, when the tool left tools/list but stayed callable. Calls to notion-query-database-view now return a tool error that names the replacement, notion-query-data-sources, which takes the same view_url as {"data": {"mode": "view", "view_url": "..."}}.'
+signatures:
+- notion-query-database-view
+source_url: https://developers.notion.com/page/changelog
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- Completing the query tool update in Notion MCP
+- '`notion-query-database-view` is no longer available'
+- Calls to the old tool name now return a tool error
+- September 29, 2026
+fix_hint: 'Call notion-query-data-sources instead, passing the same view_url as {"data": {"mode": "view", "view_url": "..."}}, and remove notion-query-database-view from allowlists and prompts.'

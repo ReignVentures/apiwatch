@@ -1,0 +1,29 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-09-24: fix. Summary says public preview plainly; detail says Global Payouts is in private preview (with evidence); added EnabledDeliveryOptions.
+# Scope: PUBLIC PREVIEW API version 2026-08-26.preview (Global Payouts v2 Payout Methods). Ships in stripe-python v15.7.0b1 / stripe-node v22.7.0-beta.1.
+# The same page adds a "restricted" boolean to v2 vault US/GB bank accounts; that part is additive and not recorded.
+id: stripe-2026-08-26-payout-method-enabled-delivery-schemes
+vendor: Stripe
+surface: Stripe API 2026-08-26.preview (public preview) — v2 Payout Method bank_account.enabled_delivery_options renamed to enabled_delivery_schemes
+kind: rest
+severity: breaking
+effective: '2026-08-26'
+summary: In Stripe's public preview API version 2026-08-26.preview, the v2 Payout Method bank_account.enabled_delivery_options property was renamed to enabled_delivery_schemes
+detail: This applies only to callers on 2026-08-26.preview, or on the preview SDKs that pin it (stripe-python 15.7.0b1, stripe-node 22.7.0-beta.1), who use Global Payouts, which is in private preview. Integrations that read enabled_delivery_options from the bank_account hash of a v2 Payout Method won't receive the expected data and might receive errors.
+signatures:
+- enabled_delivery_options
+- EnabledDeliveryOptions
+context:
+- stripe
+source_url: https://docs.stripe.com/changelog/dahlia/2026-08-26/updates-v2-payout-method-and-vault-bank-account-resources.md
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- Renames the `enabled_delivery_options` property to
+- you must update your code to use `enabled_delivery_schemes` instead
+- 'Stripe-Version: 2026-08-26.preview'
+- url: https://github.com/stripe/stripe-python/releases/tag/v15.7.0b1
+  text: Remove support for `enabled_delivery_options` on `V2.MoneyManagement.PayoutMethod.BankAccount`
+- url: https://docs.stripe.com/global-payouts.md
+  text: Global Payouts is in private preview
+fix_hint: Before moving to 2026-08-26.preview, read bank_account.enabled_delivery_schemes instead of enabled_delivery_options on v2 Payout Methods.

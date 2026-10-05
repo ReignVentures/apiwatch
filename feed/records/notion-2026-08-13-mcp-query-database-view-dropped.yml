@@ -1,0 +1,24 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: pass, no changes.
+# Aug 10 entry announced the consolidation; Aug 13 dropped the tool from tools/list.
+# 2026-10-02: fix_hint notes the removal that followed on Sep 29.
+id: notion-2026-08-13-mcp-query-database-view-dropped
+vendor: Notion MCP
+surface: MCP tool notion-query-database-view → notion-query-data-sources (mode "view")
+kind: mcp
+severity: deprecation
+effective: '2026-08-13'
+summary: notion-query-database-view no longer appears in tools/list; still callable for now, with removal announced
+detail: Saved-view queries moved to notion-query-data-sources with mode "view" and the same view_url. Clients with a cached tool list can still call the old tool and get migration guidance. Agents that build their tool set from a fresh tools/list lose it immediately, and the query_database_view entry is gone from current_tool_access. Notion said on Aug 10 it plans to remove the old tool in a follow-up change.
+signatures:
+- notion-query-database-view
+- query_database_view
+source_url: https://developers.notion.com/page/changelog
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- New tool-list responses no longer include notion-query-database-view
+- no longer has a query_database_view entry
+- We plan to remove this older tool in a follow-up change
+- August 13, 2026
+fix_hint: Switch to notion-query-data-sources with mode "view"; the old tool was removed on September 29, 2026 (see notion-2026-09-29-mcp-query-database-view-removed).

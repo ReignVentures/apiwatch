@@ -1,0 +1,2 @@
+{"tools": [{"name": "search_documents", "inputSchema": {"type": "object", "properties": {"q": {"type": "string"}}}},
+           {"name": "get_document", "inputSchema": {"type": "object", "properties": {"id": {"type": "string"}}}}]}

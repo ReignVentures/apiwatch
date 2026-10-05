@@ -1,0 +1,20 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Removed a usage claim and a pricing claim that the source doesn't support.
+id: anthropic-2026-04-20-haiku-3-retirement
+vendor: Anthropic
+surface: model claude-3-haiku-20240307
+kind: model
+severity: breaking
+effective: "2026-04-20"
+summary: Claude Haiku 3 retired on the Claude API; requests to it now fail
+detail: Deprecated February 19, 2026 and retired April 20, 2026 on Anthropic-operated platforms (Claude API, Claude Platform on AWS, Microsoft Foundry). Requests to retired models fail. Recommended replacement is claude-haiku-4-5-20251001.
+signatures: ["claude-3-haiku-20240307", "claude-3-haiku"]
+source_url: "https://platform.claude.com/docs/en/about-claude/model-deprecations"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "claude-3-haiku-20240307"
+  - "This model was retired April 20, 2026."
+  - "claude-haiku-4-5-20251001"
+  - "Requests to retired models will fail."
+fix_hint: Switch to claude-haiku-4-5-20251001 and re-check cost and latency budgets before cutover.

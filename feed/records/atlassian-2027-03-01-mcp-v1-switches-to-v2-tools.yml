@@ -1,0 +1,22 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. The "abstracted tools" wording described the July preview, not GA; pagination is now tied to ?tools=all as the source says; the fix adds the credential-cache step.
+# Announced 2026-09-08 (v2 GA). v2 preview launched 2026-07-01 at /v1/mcp/preview.
+id: atlassian-2027-03-01-mcp-v1-switches-to-v2-tools
+vendor: Atlassian Rovo MCP
+surface: Rovo MCP v1 endpoint (mcp.atlassian.com/v1) → v2 tool set
+kind: mcp
+severity: breaking
+effective: "2027-03-01"
+summary: On Mar 1, 2027 every v1 Rovo MCP connection starts exposing the v2 tools; v2 is GA now at /v2/mcp
+detail: v2 went GA on Sep 8, 2026 at https://mcp.atlassian.com/v2/mcp with new and improved Jira and Confluence tools and new products (Loom, Goals, Projects, Team, Focus, Talent, Bitbucket). From Mar 1, 2027 existing v1 usage is switched to the v2 tools automatically. Incompatible clients must clear cached client ids or .well-known credentials to keep authenticating. For MCP gateways, https://mcp.atlassian.com/v2/mcp?tools=all exposes a flat tool list, and tools/list returns it paginated at 50 tools per page, so a client that reads only the first page sees a partial set.
+signatures: ["mcp.atlassian.com/v1"]
+source_url: "https://developer.atlassian.com/cloud/rovo-mcp/changelog/"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "Atlassian Rovo MCP v2 is now Generally Available"
+  - "https://mcp.atlassian.com/v2/mcp"
+  - "Mar 1, 2027"
+  - "automatically start to expose and utilize v2 tools"
+  - "tools/list will return tools paginated as 50 tools per page"
+fix_hint: Move to /v2/mcp before the cutoff, diff the tool set with apiwatch probe, and make sure the client paginates tools/list; clear cached clientIds and .well-known credentials if the client can't re-authenticate after the switch.

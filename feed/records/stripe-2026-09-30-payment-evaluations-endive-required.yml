@@ -1,0 +1,33 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-10-02: fix. Source confirms the 403 for Radar Standard on earlier versions ('Previously, these requests succeeded'), so ungated is correct. Context stripe+radar; .NET service added; 403 evidence.
+# Scope: two changes on one page. (1) Score: on 2026-09-30.endive an unavailable signal score is null instead of -1 (affects upgraders).
+# (2) Radar Standard users get a 403 payment_evaluation_on_api_version_not_supported on any API version before 2026-09-30.endive, which bites
+# callers who have NOT upgraded. Because of (2) there is deliberately no repo_context gate: every Payment Evaluations caller is in scope.
+# Signatures are the Payment Evaluations surface in each SDK (Python/Ruby/.NET class, Python/REST path, Node, Go client field and package).
+id: stripe-2026-09-30-payment-evaluations-endive-required
+vendor: Stripe
+surface: Stripe Radar Payment Evaluations API — signal score nullable on 2026-09-30.endive; Radar Standard requires 2026-09-30.endive or later
+kind: rest
+severity: breaking
+effective: '2026-09-30'
+summary: Radar Standard users must now call Payment Evaluations with Stripe API version 2026-09-30.endive or later, and on that version an unavailable signal score is null instead of -1
+detail: On API versions before 2026-09-30.endive, Radar Standard users' Payment Evaluation requests now fail with HTTP 403 and error code payment_evaluation_on_api_version_not_supported; previously they succeeded. After upgrading, Radar Standard users receive null for every signal's score (other eligible Radar plans still get rounded numeric scores), and an unavailable score is null rather than -1, while risk_level stays available.
+signatures:
+- payment_evaluations
+- paymentEvaluations
+- PaymentEvaluation
+- PaymentEvaluationService
+- V1RadarPaymentEvaluations
+- radar/paymentevaluation
+context:
+- - stripe
+  - radar
+source_url: https://docs.stripe.com/changelog/endive/2026-09-30/payment-evaluations-nullable-score.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- Radar Standard users must now use API version `2026-09-30.endive` or later
+- payment_evaluation_on_api_version_not_supported
+- error (HTTP status 403)
+- Previously, an unavailable score returned `-1`. After upgrading, it returns `null` instead.
+fix_hint: If you're on Radar Standard, call Payment Evaluations with API version 2026-09-30.endive or later. Before upgrading, handle null signal scores (replace checks for -1 with checks for null) and fall back to each signal's risk_level, such as fraudulent_payment.risk_level.

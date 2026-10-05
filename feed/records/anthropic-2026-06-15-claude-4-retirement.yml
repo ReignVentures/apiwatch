@@ -1,0 +1,21 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Added the claude-4-opus/claude-4-sonnet alternate ids (official SDK) and matched the detail to the source's wording.
+id: anthropic-2026-06-15-claude-4-retirement
+vendor: Anthropic
+surface: models claude-opus-4-20250514 / claude-sonnet-4-20250514 (aliases claude-opus-4-0 / claude-sonnet-4-0)
+kind: model
+severity: breaking
+effective: "2026-06-15"
+summary: Claude Opus 4 and Sonnet 4 retired on the Claude API; requests to them now fail
+detail: Deprecated April 14, 2026 and retired June 15, 2026 on Anthropic-operated platforms (Claude API, Claude Platform on AWS, Microsoft Foundry). Requests to retired models fail. Amazon Bedrock and Google Cloud set their own schedules. Recommended replacements are claude-opus-4-8 and claude-sonnet-4-6.
+signatures: ["claude-opus-4-20250514", "claude-sonnet-4-20250514", "claude-4-opus-20250514", "claude-4-sonnet-20250514", "claude-opus-4-0", "claude-sonnet-4-0"]
+source_url: "https://platform.claude.com/docs/en/about-claude/model-deprecations"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "claude-opus-4-20250514"
+  - "claude-sonnet-4-20250514"
+  - "These models were retired June 15, 2026."
+  - {"url": "https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/v0.64.0/src/anthropic/types/model.py", "text": "claude-opus-4-0"}
+  - {"url": "https://raw.githubusercontent.com/anthropics/anthropic-sdk-python/v0.64.0/src/anthropic/types/model.py", "text": "claude-4-opus-20250514"}
+fix_hint: Move model ids to config; switch to claude-opus-4-8 / claude-sonnet-4-6; add a startup check that the configured model resolves.

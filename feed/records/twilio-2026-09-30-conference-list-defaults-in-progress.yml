@@ -1,0 +1,42 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-09-24: fix. conferences.list is documented on the Conference resource page, so it stays and is cited; added the C#/Java/PHP list calls from the same page and excluded URL calls that already pass a status filter. Summary in future tense.
+# The lead URL is itself the detail page (HTTP 200, no redirect); it is dated Sep. 23, 2026.
+# conferences.list is the helper-library list call (twilio-python / twilio-node); the source names only the REST path. Calls that already pass status are unaffected but still match.
+# 2026-09-24 attribution review: added the Go ListConference call (documented on the Conference resource page) and excludes for status filters passed in each SDK's documented style.
+id: twilio-2026-09-30-conference-list-defaults-in-progress
+vendor: Twilio
+surface: Voice REST GET /2010-04-01/Accounts/{AccountSid}/Conferences.json (list conferences)
+kind: rest
+severity: silent
+effective: '2026-09-30'
+summary: From September 30, 2026 the Conference list endpoint will return only in-progress conferences when no status filter is given
+detail: Announced September 23, 2026. Without a status filter the endpoint currently returns conferences of every status (init, in-progress, completed); from September 30 it will return only in-progress ones. Each call will then return either in-progress or completed conferences, so applications that retrieve completed conferences must add status=completed, and those that need both must make two requests.
+signatures:
+- Conferences.json
+- conferences.list
+- ConferenceResource.ReadAsync
+- Conference.reader
+- conferences->read
+- ListConference
+context:
+- twilio
+exclude:
+- Conferences.json?Status=
+- Conferences.json?status=
+- conferences.list(status=
+- 'conferences.list(status:'
+- 'conferences.list({ status:'
+- conferences->read(["status"
+- Conference.reader().setStatus(
+- 'ConferenceResource.ReadAsync(status:'
+source_url: https://www.twilio.com/en-us/changelog/conference-list-endpoint-july-2026
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- Sep. 23, 2026
+- Starting September 30, 2026
+- will default to returning only in-progress conferences
+- include the status=completed query parameter
+- url: https://www.twilio.com/docs/voice/api/conference-resource.md
+  text: client.conferences.list
+fix_hint: Pass status=completed where you need completed conferences, and make two separate requests if you need both in-progress and completed ones.

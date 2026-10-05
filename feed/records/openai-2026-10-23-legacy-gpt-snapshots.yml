@@ -1,0 +1,54 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Added ft:babbage-002 and ft:davinci-002, which the base-model signatures don't catch; corrected which fine-tunes are "on these bases"; the fix no longer promises re-training that OpenAI restricts.
+# Signatures rely on token-aware matching (2026-09-23): bare gpt-4 and o1 don't hit gpt-4o, gpt-4.1, or longer identifiers.
+# gpt-4-1106-preview removed 2026-09-24: the source also lists it here, but says it was shut down March 26, 2026; it lives in openai-2026-03-26-legacy-gpt-model-snapshots-march-2026-shutdown.
+# 2026-09-24 rehearsal: the o4-mini system-card PDF name isn't a model id (openai-agents-python examples).
+# 2026-09-24: excludes ids the 2025 records date earlier (Jun 6, Jul 28, Oct 27).
+id: openai-2026-10-23-legacy-gpt-snapshots
+vendor: OpenAI
+surface: gpt-3.5-turbo, gpt-4, gpt-4-turbo, gpt-4.1-nano, o1, o1-pro, o3-mini, o4-mini, gpt-image-1 and fine-tunes
+kind: model
+severity: breaking
+effective: '2026-10-23'
+summary: Old GPT-3.5/4/o-series snapshots shut down October 23, 2026, including the bare aliases gpt-4, gpt-3.5-turbo, o1, o3-mini, o4-mini
+detail: Announced April 22, 2026. Includes the unversioned aliases, so code that never pinned a snapshot still breaks. Covered — gpt-3.5-turbo(-0125), gpt-4(-0613), gpt-4-turbo(-2024-04-09), gpt-4.1-nano(-2025-04-14), gpt-4o-2024-05-13, gpt-image-1, o1(-2024-12-17), o1-pro(-2025-03-19), o3-mini(-2025-01-31), o4-mini(-2025-04-16), plus -completions variants, ft-o4-mini-2025-04-16, and the fine-tuned models ft-gpt-3.5-turbo, ft-gpt-4, ft-gpt-4.1-nano-2025-04-14, ft-babbage-002 and ft-davinci-002. Substitutes are gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, and gpt-image-2.
+signatures:
+- gpt-4
+- o1
+- gpt-3.5-turbo
+- gpt-4-0613
+- gpt-4-turbo
+- gpt-4.1-nano
+- gpt-4o-2024-05-13
+- gpt-image-1
+- o1-2024-12-17
+- o1-pro
+- o3-mini
+- o4-mini
+- ft:gpt-3.5-turbo
+- ft:gpt-4
+- ft:babbage-002
+- ft:davinci-002
+exclude:
+- gpt-3.5-turbo-1106
+- gpt-3.5-turbo-instruct
+- gpt-image-1-mini
+- gpt-4-0314
+- gpt-4-0125-preview
+- gpt-4-1106-preview
+- gpt-4-turbo-preview
+- o4-mini-deep-research
+- o4-mini-system-card
+- gpt-4-32k
+- o1-preview
+- o1-mini
+source_url: https://developers.openai.com/api/docs/deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- October 23, 2026
+- gpt-4-0613-completions
+- o1-pro-2025-03-19
+- ft-babbage-002
+- ft-davinci-002
+fix_hint: Switch to the listed substitute. Fine-tuned models listed here shut down on the same date, and OpenAI restricts creating new fine-tuning jobs, so confirm you can re-train before planning on it. Check config files and env vars too, where bare aliases like "gpt-4" tend to live.

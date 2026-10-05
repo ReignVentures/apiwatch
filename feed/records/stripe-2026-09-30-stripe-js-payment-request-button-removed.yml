@@ -1,0 +1,48 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-10-02: fix. Facts correct; gate widened to yarn berry and apps that list only @stripe/react-stripe-js 7 (peer-requires stripe-js 10, removes the PRB component).
+# Scope: Stripe.js Endive (js.stripe.com/endive, or @stripe/stripe-js 10.x, which loads Endive: v10.0.0 release notes "Removed ... for Endive";
+# the versioning doc says each @stripe/stripe-js major consumes one fixed Stripe.js version). Stripe.js through Dahlia (v3, @stripe/stripe-js <= 9) is unaffected.
+# repo_context matches the script URL or the @stripe/stripe-js 10 dependency in package.json / yarn.lock / pnpm-lock.yaml (package-lock.json puts name and version on separate lines, so it's missed).
+id: stripe-2026-09-30-stripe-js-payment-request-button-removed
+vendor: Stripe
+surface: Stripe.js Endive — payment request button element (elements.create('paymentRequestButton'), React PaymentRequestButtonElement)
+kind: sdk
+severity: breaking
+effective: '2026-09-30'
+summary: In Stripe.js Endive (js.stripe.com/endive or @stripe/stripe-js 10), elements.create('paymentRequestButton') throws an error, which also breaks the React PaymentRequestButtonElement
+detail: Stripe deprecated the payment request button and removed support for it in Endive; @stripe/stripe-js 10.0.0 removes it, and @stripe/react-stripe-js 7.0.0 (which requires @stripe/stripe-js 10) removes the React component. Stripe.js versions through Dahlia still support it.
+signatures:
+- paymentRequestButton
+- PaymentRequestButtonElement
+context:
+- stripe
+repo_context:
+- js.stripe.com/endive
+- dep:npm:@stripe/stripe-js@10.
+- dep:npm:@stripe/react-stripe-js@7.
+- '"@stripe/stripe-js": "^10'
+- '"@stripe/stripe-js": "~10'
+- '"@stripe/stripe-js": "10'
+- '@stripe/stripe-js@^10'
+- '@stripe/stripe-js@10'
+- '@stripe/stripe-js@npm:^10'
+- '@stripe/stripe-js@npm:10'
+- '"@stripe/react-stripe-js": "^7'
+- '"@stripe/react-stripe-js": "~7'
+- '"@stripe/react-stripe-js": "7'
+- '@stripe/react-stripe-js@^7'
+- '@stripe/react-stripe-js@7'
+- '@stripe/react-stripe-js@npm:^7'
+- '@stripe/react-stripe-js@npm:7'
+source_url: https://docs.stripe.com/changelog/endive/2026-09-30/deprecate-payment-request-button.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- Starting with Endive, `elements.create('paymentRequestButton')` throws an error.
+- React `PaymentRequestButtonElement` component
+- continue to support the payment request button element
+- url: https://github.com/stripe/stripe-js/releases/tag/v10.0.0
+  text: Removed payment request button for Endive
+- url: https://docs.stripe.com/sdks/stripejs-versioning.md
+  text: each major version of Stripe.js consumes a specific fixed version
+fix_hint: Replace the payment request button with the Express Checkout Element (Stripe's migration guide covers it) before moving to Stripe.js Endive, @stripe/stripe-js 10 or @stripe/react-stripe-js 7.

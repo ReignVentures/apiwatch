@@ -1,0 +1,21 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: pass, no changes. grok-imagine-image-pro is left to the May 15 record, which already claims it.
+# Written by Claude on 2026-09-24 from xAI's November 2 migration guide. Independent review: see the second header line once reviewed.
+id: xai-2026-11-02-grok-imagine-image-quality-retirement
+vendor: xAI
+surface: image model grok-imagine-image-quality (/v1/images/generations, /v1/images/edits)
+kind: model
+severity: silent
+effective: "2026-11-02"
+summary: From November 2, 2026, grok-imagine-image-quality requests are served by grok-imagine-image-2.0 at low quality; the slug keeps working, but the model and price change
+detail: "xAI retires the grok-imagine-image-quality slug on November 2, 2026 (60-day notice from September 2). Requests to it on /v1/images/generations and /v1/images/edits are then served by grok-imagine-image-2.0 with quality low, with request and response shapes unchanged, and billed at that model's low-quality rate, which xAI says is $0.01 per image cheaper. grok-imagine-image-pro, which already redirects to grok-imagine-image-quality, follows it to grok-imagine-image-2.0. grok-imagine-image (1.0) is not affected."
+signatures: ["grok-imagine-image-quality"]
+source_url: "https://docs.x.ai/developers/migration/imagine-image-quality-nov-2"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "grok-imagine-image-quality Retirement on November 2, 2026"
+  - "served by grok-imagine-image-2.0 with quality set to low"
+  - "The slug continues to resolve"
+  - "$0.01 per image cheaper"
+fix_hint: Switch the model field to grok-imagine-image-2.0 and set quality explicitly (low, medium, or auto) instead of relying on the redirect's low default; check the model field in responses to confirm which model served each request.

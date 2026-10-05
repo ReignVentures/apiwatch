@@ -1,0 +1,44 @@
+name: test
+on:
+  push:
+  pull_request:
+concurrency:                 # two quick pushes to a PR shouldn't race to create the apiwatch comment
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev]"
+      - run: pytest -q
+      - name: sample scan gates CI (planted hits → exit 1)
+        run: |
+          set +e
+          python -m apiwatch.cli scan samples/repo --fail-on-breaking
+          test $? -eq 1
+  action:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write      # dogfood the PR comment on this repo's own pull requests
+    steps:
+      - uses: actions/checkout@v4
+      - id: scan
+        uses: ./
+        with:
+          path: samples/repo
+          fail-on-breaking: "false"
+          comment: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
+      - name: action wrote SARIF and briefs
+        run: |
+          test -s apiwatch.sarif
+          ls apiwatch-briefs/anthropic-2026-06-15-claude-4-retirement.md
+          grep -q "known changes touch this code" apiwatch-summary.md
+          python -c "import json; d=json.load(open('apiwatch.sarif')); assert d['runs'][0]['results'], 'no results'"

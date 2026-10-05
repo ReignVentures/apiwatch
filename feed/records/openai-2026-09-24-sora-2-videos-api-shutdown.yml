@@ -1,0 +1,20 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Removed an editorial line. /v1/videos is confirmed on the Videos API reference.
+id: openai-2026-09-24-sora-2-videos-api-shutdown
+vendor: OpenAI
+surface: Videos API and sora-2 / sora-2-pro models
+kind: rest
+severity: breaking
+effective: "2026-09-24"
+summary: OpenAI Videos API and all Sora 2 models shut down September 24, 2026, with no replacement
+detail: Announced March 24, 2026. The Videos API, the aliases sora-2 and sora-2-pro, and snapshots sora-2-2025-10-06, sora-2-2025-12-08, and sora-2-pro-2025-10-06 are removed. OpenAI lists no recommended replacement.
+signatures: ["sora-2", "/v1/videos"]
+source_url: "https://developers.openai.com/api/docs/deprecations"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "2026-03-24: Sora 2 video generation models and Videos API"
+  - "removal from the API on September 24, 2026"
+  - "sora-2-pro-2025-10-06"
+  - {"url": "https://developers.openai.com/api/reference/resources/videos/methods/create.md", "text": "api.openai.com/v1/videos"}
+fix_hint: Pick another video provider or remove the feature; put video generation behind an interface so the provider swap is one module.

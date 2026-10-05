@@ -1,0 +1,21 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Two phrases the source doesn't support were removed.
+id: notion-2026-09-17-mcp-search-drops-unavailable-options
+vendor: Notion MCP
+surface: MCP tools notion-search / notion-ai-search — filters and sorts outside the plan
+kind: mcp
+severity: silent
+effective: "2026-09-17"
+summary: Search calls with filters the plan doesn't include now return broader results instead of a validation_error
+detail: A notion-search or notion-ai-search call that asks for a filter or sort the workspace plan lacks now runs the supported part of the query. Results can be broader than requested and relevance-sorted, and the dropped fields are named in a new notices array. notion-ai-search on a plan without AI access now runs a Notion-only keyword search instead of erroring, but still reports type "ai_search". Code that relied on the error to detect the limit now gets broader-than-requested results unless it reads notices.
+signatures: ["notion-search", "notion-ai-search"]
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "Search drops unavailable options instead of failing"
+  - "These calls previously returned a validation_error"
+  - "adds a notices array naming the dropped fields"
+  - "runs a keyword search in Notion only"
+  - "September 17, 2026"
+fix_hint: Read the notices array on every search response and treat a dropped filter as a failure; check restricted_parameters from notion-get-tool-access before sending filters.

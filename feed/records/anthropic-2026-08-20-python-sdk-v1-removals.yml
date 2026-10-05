@@ -1,0 +1,51 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-09-24: fix. The author's context also matched TypeScript files (matching ignores case, so 'import Anthropic from' contains 'import anthropic'); replaced with Python-only import forms. Added schema-dict output_format and anthropic.Transport from MIGRATION.md. temperature= is right: on v1 it's a TypeError on Messages methods for every model.
+# Only bites when a project upgrades to anthropic>=1; 0.x releases keep working. Severity is breaking because the removed names raise (TypeError / ImportError / AttributeError) after that upgrade.
+# context is Python import forms, not bare "anthropic", so TypeScript files (@anthropic-ai/sdk) and non-SDK files are not flagged.
+# temperature=/top_p=/top_k= are the Python keyword-argument forms; extra_body={"temperature": ...} (the documented escape hatch) is deliberately not matched.
+# Not covered by signatures (detail/fix_hint only): httpx -> httpx2, async .with_raw_response parse(), Bedrock region, header-casing and bytes-header changes, isinstance(x, Stream).
+# 2026-09-24 attribution review: context also accepts client construction (catches `import os, anthropic` and `import anthropic  # noqa`).
+# 2026-09-24 scope: Python files only (files: *.py), so the import-form context no longer needs the newline trick.
+id: anthropic-2026-08-20-python-sdk-v1-removals
+vendor: Anthropic
+surface: Anthropic Python SDK v1.0 (anthropic>=1) — removed Text Completions API, sampling parameters, compaction_control and deprecated exports
+kind: sdk
+severity: breaking
+effective: '2026-08-20'
+summary: Anthropic Python SDK v1.0 (August 20, 2026) removed long-deprecated surface; completions.create, HUMAN_PROMPT/AI_PROMPT, temperature/top_p/top_k, schema-dict output_format and compaction_control fail after upgrading to anthropic>=1
+detail: v1.0 requires Python 3.10+ and moves the HTTP layer from httpx to httpx2 (passing an httpx.Client as http_client raises TypeError). It removes client.completions.create() with HUMAN_PROMPT/AI_PROMPT, the temperature/top_p/top_k parameters on Messages methods (passing them is a TypeError; the API still honours them for older models via extra_body), output_format as a schema dict, the tool runner's compaction_control/CompactionControl, and the exports BetaBase64PDFBlockParam, anthropic.Transport, ProxiesTypes and agent_toolset.READ_MAX_BYTES. Async .with_raw_response results now need await response.parse(), and AnthropicBedrock raises when no AWS region is configured.
+signatures:
+- completions.create
+- HUMAN_PROMPT
+- AI_PROMPT
+- temperature=
+- top_p=
+- top_k=
+- output_format={
+- compaction_control
+- CompactionControl
+- BetaBase64PDFBlockParam
+- anthropic.Transport
+- ProxiesTypes
+- READ_MAX_BYTES
+context:
+- import anthropic
+- from anthropic
+- anthropic.Anthropic(
+- anthropic.AsyncAnthropic(
+files:
+- '*.py'
+exclude:
+- chat.completions.create
+source_url: https://github.com/anthropics/anthropic-sdk-python/blob/main/MIGRATION.md
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- 'Removed: the legacy Text Completions API'
+- anthropic.HUMAN_PROMPT / anthropic.AI_PROMPT
+- temperature, top_p, top_k
+- url: https://platform.claude.com/docs/en/release-notes/overview.md
+  text: August 20, 2026
+- url: https://platform.claude.com/docs/en/release-notes/overview.md
+  text: We've released v1.0 of the Python SDK
+fix_hint: 'Before bumping to anthropic>=1: move completions.create calls to messages.create; drop temperature/top_p/top_k (use extra_body={"temperature": ...} only for an older model that still honours it); pass schema dicts as output_config={"format": {...}} and keep output_format= for classes; replace compaction_control with server-side context_management compaction; swap BetaBase64PDFBlockParam for BetaRequestDocumentBlockParam and READ_MAX_BYTES for DEFAULT_MAX_FILE_BYTES; build custom HTTP objects from httpx2; await response.parse() on async raw responses; set aws_region for AnthropicBedrock.'

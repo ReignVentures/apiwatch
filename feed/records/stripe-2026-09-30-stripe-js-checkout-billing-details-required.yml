@@ -1,0 +1,78 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-10-02: fix. Facts correct; added object-form address fields; context also accepts react-stripe-js/checkout imports; summary limited to required data; fix adds the automatic-tax caveat; gate widened.
+# Scope: Stripe.js Endive (js.stripe.com/endive, or @stripe/stripe-js 10.x, which loads Endive: v10.0.0 release notes "Removed ... for Endive";
+# the versioning doc says each @stripe/stripe-js major consumes one fixed Stripe.js version). Stripe.js through Dahlia (v3, @stripe/stripe-js <= 9) is unaffected.
+# repo_context matches the script URL or the @stripe/stripe-js 10 dependency in package.json / yarn.lock / pnpm-lock.yaml (package-lock.json puts name and version on separate lines, so it's missed).
+# Only Elements with Checkout Sessions (Custom Checkout) changes: context needs billingDetails plus a Custom Checkout marker
+# (initCheckout*, useCheckout, CheckoutProvider/CheckoutElementsProvider, createPaymentElement). Elements with PaymentIntents is unaffected.
+id: stripe-2026-09-30-stripe-js-checkout-billing-details-required
+vendor: Stripe
+surface: 'Stripe.js Endive — Elements with Checkout Sessions: Payment Element fields.billingDetails ''never'' and checkout.confirm()'
+kind: sdk
+severity: breaking
+effective: '2026-09-30'
+summary: In Stripe.js Endive, Elements with Checkout Sessions integrations that set a Payment Element billing field to never must supply any required billing data for it another way, or checkout.confirm() throws an integration error
+detail: Previously checkout.confirm() could succeed even when a required billing field set to never wasn't provided through another source. Optional fields such as address.line2 are exempt. Previous Stripe.js major versions keep the earlier behavior.
+signatures:
+- 'billingDetails: ''never'''
+- 'billingDetails: "never"'
+- 'name: ''never'''
+- 'name: "never"'
+- 'email: ''never'''
+- 'email: "never"'
+- 'phone: ''never'''
+- 'phone: "never"'
+- 'address: ''never'''
+- 'address: "never"'
+- 'country: ''never'''
+- 'country: "never"'
+- 'postalCode: ''never'''
+- 'postalCode: "never"'
+- 'state: ''never'''
+- 'state: "never"'
+- 'city: ''never'''
+- 'city: "never"'
+- 'line1: ''never'''
+- 'line1: "never"'
+context:
+- - billingdetails
+  - initcheckout
+- - billingdetails
+  - usecheckout
+- - billingdetails
+  - checkoutprovider
+- - billingdetails
+  - checkoutelementsprovider
+- - billingdetails
+  - createpaymentelement
+- - billingdetails
+  - react-stripe-js/checkout
+repo_context:
+- js.stripe.com/endive
+- dep:npm:@stripe/stripe-js@10.
+- dep:npm:@stripe/react-stripe-js@7.
+- '"@stripe/stripe-js": "^10'
+- '"@stripe/stripe-js": "~10'
+- '"@stripe/stripe-js": "10'
+- '@stripe/stripe-js@^10'
+- '@stripe/stripe-js@10'
+- '@stripe/stripe-js@npm:^10'
+- '@stripe/stripe-js@npm:10'
+- '"@stripe/react-stripe-js": "^7'
+- '"@stripe/react-stripe-js": "~7'
+- '"@stripe/react-stripe-js": "7'
+- '@stripe/react-stripe-js@^7'
+- '@stripe/react-stripe-js@7'
+- '@stripe/react-stripe-js@npm:^7'
+- '@stripe/react-stripe-js@npm:7'
+source_url: https://docs.stripe.com/changelog/endive/2026-09-30/strict-billing-details-validation.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- value to `never` without providing the corresponding required data
+- these integrations fail at confirmation with an integration error
+- Previous Stripe.js major versions retain the earlier behavior.
+- don't pass billingAddress to checkout.confirm()
+- url: https://docs.stripe.com/sdks/stripejs-versioning.md
+  text: each major version of Stripe.js consumes a specific fixed version
+fix_hint: 'Before moving to Stripe.js Endive, supply every required billing field you set to never: call updateBillingAddress, updateEmail or updatePhoneNumber, pass billingAddress, email or phoneNumber to checkout.confirm(), or use the Billing Address Element. With automatic tax, provide the address through the Address Element or updateBillingAddress rather than checkout.confirm(). Or set only the fields you collect yourself to never and leave the rest auto.'

@@ -1,0 +1,21 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. The summary and detail now say the Sep 10 follow-up partly reversed the split for connections that can use AI search.
+id: notion-2026-09-02-mcp-search-split
+vendor: Notion MCP
+surface: MCP tool notion-search → notion-search (keyword) + notion-ai-search (semantic)
+kind: mcp
+severity: silent
+effective: "2026-09-02"
+summary: notion-search became keyword-only and stopped searching connected apps; semantic search moved to a new notion-ai-search tool; partly reversed Sep 10 for connections that can use AI search
+detail: notion-search now matches short, specific terms in Notion only, with no Slack, Google Drive, or Jira results. Agents keep calling it and get narrower results with no error; from Sep 10 this still holds for connections that can't use AI search and for calls with exact filters, an empty query, or a non-relevance sort. notion-ai-search needs Notion AI. The old content_search_mode parameter still works but is no longer advertised (since Sep 10, content_search_mode "ai_search" returns a permission error on connections that can't use notion-ai-search), so agents built from the tool list won't find it. A Sep 10 follow-up routes keyword content queries on notion-search to AI search when the connection allows it, so behavior now depends on plan and tool selection.
+signatures: ["notion-search", "content_search_mode"]
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "Notion MCP splits keyword search and AI search"
+  - "no longer searches connected apps like Slack, Google Drive, and Jira"
+  - "The parameter is no longer advertised"
+  - "Content searches sent to notion-search now run AI search"
+  - "September 2, 2026"
+fix_hint: Call notion-fetch with id self and read current_tool_access.ai_search.status (or call notion-get-tool-access); route content search to notion-ai-search when available; add an eval that expects a cross-source result.

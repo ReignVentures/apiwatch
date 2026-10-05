@@ -1,0 +1,32 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. The summary now says cached clients "may" fail, as the source does.
+# Announced 2026-04-27.
+# 2026-10-02 re-review: the entry (CHANGE-3170) moved to page 2 of the changelog, which only loads with JavaScript; evidence now comes from Atlassian's changelog backend, which the page names as its baseUrl. 1779840000000 is the entry's date node (2026-05-27T00:00:00Z).
+id: atlassian-2026-05-27-mcp-oauth-server-change
+vendor: Atlassian Rovo MCP
+surface: Rovo MCP OAuth (dynamic client registration) — auth server moved to Atlassian Identity
+kind: mcp
+severity: breaking
+effective: '2026-05-27'
+summary: Rovo MCP switched OAuth servers on May 27, 2026; clients that cache client_id or the auth discovery document may start to fail
+detail: From May 27, 2026 all requests to https://mcp.atlassian.com/v1/mcp/ use the new auth server (Atlassian Identity) for DCR OAuth. Cached client_ids and cached /.well-known/oauth-authorization-server documents aren't recognized by the new server.
+signatures:
+- mcp.atlassian.com
+- oauth-authorization-server
+context:
+- atlassian
+source_url: https://developer.atlassian.com/cloud/rovo-mcp/changelog/
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- url: https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3170
+  text: Atlassian MCP moving to new DCR OAuth provider
+- url: https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3170
+  text: different auth server (Atlassian Identity) for DCR OAuth
+- url: https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3170
+  text: /.well-known/oauth-authorization-server
+- url: https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3170
+  text: any clients which are still caching may start to fail
+- url: https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3170
+  text: '1779840000000'
+fix_hint: Don't cache DCR registrations or discovery documents across auth-server changes; key stored credentials by issuer; re-register on an issuer mismatch.

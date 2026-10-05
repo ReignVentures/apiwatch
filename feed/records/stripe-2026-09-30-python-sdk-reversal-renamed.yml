@@ -1,0 +1,41 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-10-02: fix. Supported by the stripe-python 16.0.0 CHANGELOG (#1915) and the v16 migration guide; added the canonical PyPI dependency gate alongside the raw forms.
+# SDK-only change in stripe-python 16.0.0 (CHANGELOG "16.0.0 - 2026-09-30"; GitHub release v16.0.0 published 2026-10-01 00:48 UTC). Not an API change:
+# it bites when the repo moves to stripe-python 16.x, whatever API version it sends. Sources: the SDK CHANGELOG and the v16 migration guide in the repo (.hark/migration-guides/v16.md).
+# repo_context gates on stripe-python 16 as dependency files write it ("stripe==16", "stripe>=16", "stripe~=16", poetry/Pipfile 'stripe = "^16' / 'stripe = "==16').
+# Misses poetry.lock/uv.lock/Pipfile.lock (name and version on separate lines) and floating ranges such as "stripe>=15".
+# stripe.Reversal is specific (token match: it doesn't hit stripe.TransferReversal); bare `Reversal` after `from stripe import a, Reversal` isn't caught.
+id: stripe-2026-09-30-python-sdk-reversal-renamed
+vendor: Stripe
+surface: stripe-python 16.0.0 — stripe.Reversal class renamed to stripe.TransferReversal
+kind: sdk
+severity: breaking
+effective: '2026-09-30'
+summary: stripe-python 16.0.0 renamed the stripe.Reversal class to stripe.TransferReversal, so code that references stripe.Reversal breaks when you upgrade to it
+detail: The rename affects imports, class comparisons, isinstance checks and type annotations that name stripe.Reversal. The methods that create, retrieve, modify and list transfer reversals are unchanged, so code that only calls them and reads attributes doesn't need an update.
+signatures:
+- stripe.Reversal
+- from stripe import Reversal
+- stripe._reversal
+files:
+- '*.py'
+- '*.pyi'
+- '*.ipynb'
+repo_context:
+- dep:pypi:stripe@16.
+- stripe==16
+- stripe>=16
+- stripe~=16
+- stripe = "^16
+- stripe = "==16
+source_url: https://raw.githubusercontent.com/stripe/stripe-python/master/CHANGELOG.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- Rename `stripe.Reversal` to `stripe.TransferReversal`
+- 16.0.0 - 2026-09-30
+- url: https://raw.githubusercontent.com/stripe/stripe-python/master/.hark/migration-guides/v16.md
+  text: including imports, class comparisons, `isinstance` checks, and type annotations
+- url: https://raw.githubusercontent.com/stripe/stripe-python/master/.hark/migration-guides/v16.md
+  text: isinstance(reversal, stripe.TransferReversal)
+fix_hint: When moving to stripe-python 16, replace stripe.Reversal with stripe.TransferReversal in imports, isinstance checks and type annotations.

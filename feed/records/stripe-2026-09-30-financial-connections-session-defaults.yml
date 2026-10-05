@@ -1,0 +1,83 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-10-02: fix. Defaults and silent severity match; added the automatic-manual-entry error case the source states; summary softened.
+# Scope: GA API version 2026-09-30.endive (changelog section "2026-09-30.endive"). Bites only callers who send Stripe-Version 2026-09-30.endive
+# (or a later .endive version: the Endive overview says later Endive versions add only additive changes) or who move to the SDK majors that pin it,
+# released 2026-09-30: stripe-python 16.0.0, stripe-node 23.0.0, stripe-go v87.0.0, stripe-ruby 20.0.0, stripe-java 34.0.0, stripe-dotnet 53.0.0, stripe-php 22.0.0.
+# repo_context gate (plain substring, lowercased, searched in code and dependency manifests): ".endive" catches the version string in code/config;
+# the SDK majors are matched in their manifest shapes ("stripe==16", '"stripe": "^23', "stripe-go/v87", "stripe (20." in Gemfile.lock,
+# "stripe-java:34." in Gradle, 'Stripe.net" Version="53' in .csproj) because bare "16.0.0"/"23.0.0" would match any package at that version.
+# floating ranges such as "stripe>=15", and accounts whose default API version was upgraded in Workbench with no version in code.
+# Silent: same request, different Session. Signatures are the Session create call in each SDK plus the REST path; a hit means the defaults apply unless every listed parameter is set explicitly.
+id: stripe-2026-09-30-financial-connections-session-defaults
+vendor: Stripe
+surface: Stripe API 2026-09-30.endive — Financial Connections Session create defaults (limits.accounts, manual_entry.mode, filters.*)
+kind: rest
+severity: silent
+effective: '2026-09-30'
+summary: When you upgrade to Stripe API version 2026-09-30.endive (or an SDK major that pins it), Financial Connections Sessions created without explicit limits, filters or manual_entry settings use new standard defaults, which can change what users can link
+detail: limits[accounts] defaults to no maximum, manual_entry[mode] to disabled, filters[require_payment_method_support] to none, filters[account_subcategories] to all supported subcategories, and filters[country] to the requesting merchant's country (otherwise the US). The same request can now let users link more accounts and account types, no longer guarantee that linked accounts support payments, disable manual entry, or use a different country. Automatic manual entry isn't supported when require_payment_method_support is none.
+signatures:
+- financial_connections.Session.create
+- financial_connections.sessions.create
+- financialConnections.sessions.create
+- FinancialConnections::Session.create
+- financialConnections->sessions->create
+- FinancialConnections\Session::create
+- V1FinancialConnectionsSessions
+- financialconnections/session
+- financialconnections.SessionCreateParams
+- FinancialConnections.SessionCreateOptions
+- /v1/financial_connections/sessions
+context:
+- stripe
+repo_context:
+- 0.endive
+- 1.endive
+- 2.endive
+- 3.endive
+- 4.endive
+- 5.endive
+- 6.endive
+- 7.endive
+- 8.endive
+- 9.endive
+- dep:pypi:stripe@16.
+- dep:npm:stripe@23.
+- dep:rubygems:stripe@20.
+- dep:go:github.com/stripe/stripe-go/v87@87.
+- dep:packagist:stripe/stripe-php@22.
+- stripe==16
+- stripe>=16
+- stripe~=16
+- stripe = "^16
+- stripe = "~16
+- stripe = ">=16
+- stripe = "==16
+- stripe = "16
+- '"stripe": "^23'
+- '"stripe": "~23'
+- '"stripe": "23'
+- stripe@^23
+- stripe@23
+- stripe-go/v87
+- stripe (20.
+- gem 'stripe', '~> 20
+- gem "stripe", "~> 20
+- stripe-java:34.
+- Stripe.net" Version="53
+- '"stripe/stripe-php": "^22'
+- '"stripe/stripe-php": "~22'
+- '"stripe/stripe-php": "22'
+- stripe@npm:^23
+- stripe@npm:23
+source_url: https://docs.stripe.com/changelog/endive/2026-09-30/financial-connections-session-defaults.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- parameter defaults to no maximum on the number of accounts
+- no longer guarantees that linked accounts support payments
+- automatic manual entry isn't supported when
+- 'Stripe-Version: 2026-09-30.endive'
+- url: https://raw.githubusercontent.com/stripe/stripe-python/master/CHANGELOG.md
+  text: This release changes the pinned API version to `2026-09-30.endive`.
+fix_hint: Before moving to 2026-09-30.endive, set limits[accounts], filters[account_subcategories], filters[require_payment_method_support] (all or at_least_one if you need payment-capable accounts), filters[country] and manual_entry[mode] explicitly when creating Sessions; if you use manual_entry[mode] automatic, you must also set require_payment_method_support to all or at_least_one.

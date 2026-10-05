@@ -1,0 +1,44 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-10-02: fix. Supported by the stripe-node CHANGELOG (#2865) and the migration guide; added the canonical npm dependency gate; summary narrowed to what the source says.
+# SDK-only change in stripe-node 23.0.0 (CHANGELOG "23.0.0 - 2026-09-30"; GitHub release v23.0.0 published 2026-10-01 00:45 UTC). Not an API change:
+# it bites when the repo moves to stripe-node 23.x. Sources: the SDK CHANGELOG and the v23 migration guide in the repo (.hark/migration-guides/v23.md).
+# repo_context gates on stripe 23 as package.json ('"stripe": "^23' / "~23" / "23"), yarn.lock and pnpm-lock.yaml ("stripe@^23", "stripe@23") write it; package-lock.json is missed (name and version on separate lines).
+# Type-only: Stripe.ErrorType was a TypeScript namespace, so the break is a compile error (JSDoc types in .js are included too).
+id: stripe-2026-09-30-node-sdk-errortype-removed
+vendor: Stripe
+surface: stripe-node 23.0.0 — Stripe.ErrorType TypeScript namespace removed
+kind: sdk
+severity: breaking
+effective: '2026-09-30'
+summary: stripe-node 23.0.0 removed the Stripe.ErrorType namespace, so type annotations that name types such as Stripe.ErrorType.StripeCardError fail to compile after upgrading
+detail: Stripe.ErrorType only ever provided types, and every one of them is also available under Stripe.errors, which works as both a type and a value.
+signatures:
+- Stripe.ErrorType
+files:
+- '*.js'
+- '*.mjs'
+- '*.cjs'
+- '*.ts'
+- '*.mts'
+- '*.cts'
+- '*.tsx'
+- '*.jsx'
+repo_context:
+- dep:npm:stripe@23.
+- '"stripe": "^23'
+- '"stripe": "~23'
+- '"stripe": "23'
+- stripe@^23
+- stripe@23
+- stripe@npm:^23
+- stripe@npm:23
+source_url: https://raw.githubusercontent.com/stripe/stripe-node/master/CHANGELOG.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- Remove `ErrorType` export
+- Users can use .errors instead
+- 23.0.0 - 2026-09-30
+- url: https://raw.githubusercontent.com/stripe/stripe-node/master/.hark/migration-guides/v23.md
+  text: find and replace `Stripe.ErrorType` with `Stripe.errors`
+fix_hint: When moving to stripe-node 23, replace Stripe.ErrorType with Stripe.errors in type annotations (for example Stripe.errors.StripeCardError).

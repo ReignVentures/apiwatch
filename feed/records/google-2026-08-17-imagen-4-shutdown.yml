@@ -1,0 +1,21 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Signatures narrowed to the three GA ids (the stem also caught previews shut down Feb 17). Detail and fix now state the documented migration (generate_content, not generate_images).
+id: google-2026-08-17-imagen-4-shutdown
+vendor: Google
+surface: Gemini API models imagen-4.0-generate-001, imagen-4.0-ultra-generate-001, imagen-4.0-fast-generate-001
+kind: model
+severity: breaking
+effective: "2026-08-17"
+summary: Imagen 4 (standard, Ultra, Fast) shut down on the Gemini API August 17, 2026; replacement is a Gemini image model
+detail: "Google lists August 17, 2026 as the shutdown date for all three GA Imagen 4 models, with gemini-3.1-flash-image as the replacement; Google's Imagen page now says Imagen models are shut down. Migrating is more than a model-id swap: Google says to use generate_content instead of generate_images, and the response returns content parts with image data rather than an image response object."
+signatures: ["imagen-4.0-generate-001", "imagen-4.0-ultra-generate-001", "imagen-4.0-fast-generate-001"]
+source_url: "https://ai.google.dev/gemini-api/docs/deprecations"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "imagen-4.0-generate-001"
+  - "imagen-4.0-ultra-generate-001"
+  - "August 17, 2026"
+  - {"url": "https://ai.google.dev/gemini-api/docs/imagen.md.txt", "text": "Imagen models are shut down."}
+  - {"url": "https://ai.google.dev/gemini-api/docs/imagen.md.txt", "text": "Use client.models.generate_content instead of client.models.generate_images"}
+fix_hint: Port image generation calls to gemini-3.1-flash-image using generate_content (not generate_images) and read image data from the response content parts; compare outputs on a fixed prompt set.

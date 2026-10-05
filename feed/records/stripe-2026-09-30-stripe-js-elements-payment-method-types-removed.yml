@@ -1,0 +1,48 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-10-02: fix. Facts correct; case-sensitive paymentMethodTypes doesn't hit server-SDK forms; gate widened as for the PRB record.
+# Scope: Stripe.js Endive (js.stripe.com/endive, or @stripe/stripe-js 10.x, which loads Endive: v10.0.0 release notes "Removed ... for Endive";
+# the versioning doc says each @stripe/stripe-js major consumes one fixed Stripe.js version). Stripe.js through Dahlia (v3, @stripe/stripe-js <= 9) is unaffected.
+# repo_context matches the script URL or the @stripe/stripe-js 10 dependency in package.json / yarn.lock / pnpm-lock.yaml (package-lock.json puts name and version on separate lines, so it's missed).
+# Case-sensitive token match: paymentMethodTypes doesn't hit allowedPaymentMethodTypes or the server-side Go/.NET PaymentMethodTypes.
+id: stripe-2026-09-30-stripe-js-elements-payment-method-types-removed
+vendor: Stripe
+surface: Stripe.js Endive — Elements paymentMethodTypes option (stripe.elements() without an intent, elements.update())
+kind: sdk
+severity: breaking
+effective: '2026-09-30'
+summary: In Stripe.js Endive (js.stripe.com/endive or @stripe/stripe-js 10), setting paymentMethodTypes when creating Elements without an intent or in elements.update() throws an integration error
+detail: Stripe.js throws and won't create or update the Elements instance when paymentMethodTypes is set; @stripe/stripe-js 10.0.0 also removes the option from its types. Stripe.js versions through Dahlia still support it.
+signatures:
+- paymentMethodTypes
+context:
+- stripe
+repo_context:
+- js.stripe.com/endive
+- dep:npm:@stripe/stripe-js@10.
+- dep:npm:@stripe/react-stripe-js@7.
+- '"@stripe/stripe-js": "^10'
+- '"@stripe/stripe-js": "~10'
+- '"@stripe/stripe-js": "10'
+- '@stripe/stripe-js@^10'
+- '@stripe/stripe-js@10'
+- '@stripe/stripe-js@npm:^10'
+- '@stripe/stripe-js@npm:10'
+- '"@stripe/react-stripe-js": "^7'
+- '"@stripe/react-stripe-js": "~7'
+- '"@stripe/react-stripe-js": "7'
+- '@stripe/react-stripe-js@^7'
+- '@stripe/react-stripe-js@7'
+- '@stripe/react-stripe-js@npm:^7'
+- '@stripe/react-stripe-js@npm:7'
+source_url: https://docs.stripe.com/changelog/endive/2026-09-30/remove-elements-deferred-intent-payment-method-types.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-02'
+evidence:
+- If your integration sets `paymentMethodTypes`, Stripe.js now throws an integration error
+- You can no longer set `paymentMethodTypes` in your Elements options on Endive.
+- Stripe.js versions through Dahlia supported `paymentMethodTypes`
+- url: https://github.com/stripe/stripe-js/releases/tag/v10.0.0
+  text: Removed Elements paymentMethodTypes from types for Endive
+- url: https://docs.stripe.com/sdks/stripejs-versioning.md
+  text: each major version of Stripe.js consumes a specific fixed version
+fix_hint: Remove paymentMethodTypes from your Elements options before moving to Stripe.js Endive; use allowedPaymentMethodTypes to limit payment methods, or manage them in the Dashboard.

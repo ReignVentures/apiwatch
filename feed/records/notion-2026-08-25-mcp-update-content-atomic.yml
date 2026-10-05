@@ -1,0 +1,21 @@
+# Independent review (docs/REVIEW.md) on 2026-09-24: pass, no changes.
+id: notion-2026-08-25-mcp-update-content-atomic
+vendor: Notion MCP
+surface: MCP tool notion-update-page, update_content command
+kind: mcp
+severity: breaking
+effective: "2026-08-25"
+summary: notion-update-page update_content batches are now all-or-nothing; calls that used to partly succeed now fail
+detail: Previously, if one old_str in a batch matched nothing, the matching replacements were saved and the call returned success. That could silently drop content moved within a batch. Now the whole batch applies or none of it does. Empty old_str values, which were silently skipped, now fail validation, including on the REST Update page markdown endpoint.
+signatures: ["notion-update-page", "update_content"]
+context: ["notion"]   # generic signatures only count in files that mention notion
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-09-24"
+evidence:
+  - "Atomic batched content updates in Notion MCP"
+  - "apply every content-changing replacement in the batch or none"
+  - "old_str must also be a non-empty string"
+  - "August 25, 2026"
+fix_hint: Handle a failed batch by re-fetching the page and rebuilding the edits; never send empty old_str; add a test where one replacement misses.

@@ -1,0 +1,32 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-09-24: fix. Facts match. Added the Go/Java SDK constant forms of the beta header to signatures and the Go/Java Opus 4.7 constants to context. Gap: a model id set in another file than the betas list is missed.
+# Signature choice: the fast-mode beta header, counted only in files that mention claude-opus-4-7, so ordinary Opus 4.7 use is not flagged.
+# Known limits: a file that uses fast mode on another model and also mentions claude-opus-4-7 is a false positive; SDK enum forms of the header (Go/Java constants) are not matched.
+id: anthropic-2026-07-24-opus-4-7-fast-mode-removed
+vendor: Anthropic
+surface: Messages API speed "fast" (fast-mode-2026-02-01 beta) on claude-opus-4-7
+kind: rest
+severity: breaking
+effective: '2026-07-24'
+summary: Fast mode was removed for Claude Opus 4.7 on July 24, 2026; claude-opus-4-7 requests with speed "fast" now return an error
+detail: Deprecated June 25, 2026 and removed July 24, 2026. Unlike Claude Opus 4.6, requests do not fall back to standard speed; they fail. Claude Opus 4.7 itself remains available at standard speed.
+signatures:
+- fast-mode-2026-02-01
+- AnthropicBetaFastMode2026_02_01
+- FAST_MODE_2026_02_01
+context:
+- claude-opus-4-7
+- ModelClaudeOpus4_7
+- CLAUDE_OPUS_4_7
+source_url: https://platform.claude.com/docs/en/build-with-claude/fast-mode.md
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- Fast mode is not available on Claude Opus 4.7
+- requests do not fall back to standard speed
+- AnthropicBetaFastMode2026_02_01
+- url: https://platform.claude.com/docs/en/release-notes/overview.md
+  text: We've removed fast mode for Claude Opus 4.7
+- url: https://platform.claude.com/docs/en/release-notes/overview.md
+  text: with removal on July 24, 2026
+fix_hint: Either drop speed "fast" (and the fast-mode-2026-02-01 beta) from claude-opus-4-7 requests, or move fast-mode traffic to a supported model (claude-opus-5-5, claude-opus-5 or claude-opus-4-8).

@@ -1,0 +1,133 @@
+name: apiwatch scan
+description: Find code that a known API, model, or MCP server change lands on, and gate CI on it.
+inputs:
+  path:
+    description: Directory to scan
+    default: "."
+  records:
+    description: Feed records directory (defaults to the records bundled with this action)
+    default: ""
+  fail-on-breaking:
+    description: Fail the step when a breaking or silent change touches the code (with only-changed, the PR's files)
+    default: "true"
+  sarif:
+    description: Where to write SARIF for github/codeql-action/upload-sarif (empty to skip). Always the whole scan
+    default: "apiwatch.sarif"
+  briefs:
+    description: Where to write per-change fix briefs (uploaded as a workflow artifact)
+    default: "apiwatch-briefs"
+  summary:
+    description: Where to write the markdown report (also added to the job summary); empty to skip
+    default: "apiwatch-summary.md"
+  comment:
+    description: On pull requests, post the report as one PR comment, updated on each run (needs `pull-requests write`)
+    default: "false"
+  only-changed:
+    description: On pull requests, report and gate only on hits in files the PR changes (SARIF still covers everything)
+    default: "false"
+  token:
+    description: Token for the PR comment and the changed-file list
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - shell: bash
+      run: pip install --quiet "${{ github.action_path }}"
+    - name: resolve the scan path
+      id: where
+      shell: bash
+      env:
+        AW_PATH: ${{ inputs.path }}
+      run: |
+        # repo-relative prefix of the scanned directory, and the commit actually checked out (links match its lines)
+        rel=$(realpath --relative-to="$GITHUB_WORKSPACE" "$AW_PATH")
+        [ "$rel" = "." ] && rel=""
+        echo "prefix=$rel" >> "$GITHUB_OUTPUT"
+        echo "sha=$(git -C "$AW_PATH" rev-parse HEAD 2>/dev/null || echo "$GITHUB_SHA")" >> "$GITHUB_OUTPUT"
+        echo "key=$(printf '%s' "${rel:-.}" | sha1sum | cut -c1-8)" >> "$GITHUB_OUTPUT"
+    - name: list the files this PR changes
+      if: inputs.only-changed == 'true' && github.event.pull_request.number
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        PR: ${{ github.event.pull_request.number }}
+        PREFIX: ${{ steps.where.outputs.prefix }}
+      run: |
+        gh api "repos/$GITHUB_REPOSITORY/pulls/$PR/files" --paginate -q '.[].filename' > "$RUNNER_TEMP/apiwatch-pr-files.txt"
+        n=$(wc -l < "$RUNNER_TEMP/apiwatch-pr-files.txt")
+        [ "$n" -ge 3000 ] && echo "::warning::apiwatch: GitHub lists at most 3000 changed files; files beyond that aren't checked"
+        # paths relative to the scanned directory, as scan reports them
+        while IFS= read -r f; do
+          if [ -z "$PREFIX" ]; then printf '%s\n' "$f"; elif [[ "$f" == "$PREFIX/"* ]]; then printf '%s\n' "${f#"$PREFIX/"}"; fi
+        done < "$RUNNER_TEMP/apiwatch-pr-files.txt" > "$RUNNER_TEMP/apiwatch-changed.txt"
+        echo "$(wc -l < "$RUNNER_TEMP/apiwatch-changed.txt") of $n changed file(s) are under the scanned path"
+    - name: scan
+      id: scan
+      shell: bash
+      env:
+        AW_PATH: ${{ inputs.path }}
+        AW_RECORDS: ${{ inputs.records || format('{0}/feed/records', github.action_path) }}
+        AW_FAIL: ${{ inputs.fail-on-breaking }}
+        AW_SARIF: ${{ inputs.sarif }}
+        AW_BRIEFS: ${{ inputs.briefs }}
+        AW_SUMMARY: ${{ inputs.summary }}
+        AW_ONLY: ${{ inputs.only-changed == 'true' && github.event.pull_request.number && 'yes' || '' }}
+        PREFIX: ${{ steps.where.outputs.prefix }}
+        SHA: ${{ steps.where.outputs.sha }}
+        KEY: ${{ steps.where.outputs.key }}
+      run: |
+        link="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$SHA/${PREFIX:+$PREFIX/}"
+        args=(scan "$AW_PATH" --records "$AW_RECORDS" --out "$AW_BRIEFS")
+        [ -n "$AW_SUMMARY" ] && args+=(--markdown "$AW_SUMMARY" --link-base "$link" --report-key "$KEY")
+        [ -n "$AW_SARIF" ] && args+=(--sarif "$AW_SARIF")
+        [ "$AW_FAIL" = "true" ] && args+=(--fail-on-breaking)
+        [ -n "$AW_ONLY" ] && args+=(--only-files "$RUNNER_TEMP/apiwatch-changed.txt")
+        set +e
+        python -m apiwatch.cli "${args[@]}"
+        code=$?
+        set -e
+        if [ -n "$AW_SUMMARY" ] && [ -f "$AW_SUMMARY" ]; then
+          cat "$AW_SUMMARY" >> "$GITHUB_STEP_SUMMARY"
+          echo "hits=$(sed -n 's/^<!-- apiwatch-hits: \([0-9]*\) -->$/\1/p' "$AW_SUMMARY" | head -n 1)" >> "$GITHUB_OUTPUT"
+        fi
+        echo "code=$code" >> "$GITHUB_OUTPUT"
+    - name: upload the fix briefs
+      if: always() && steps.scan.outputs.hits != '' && steps.scan.outputs.hits != '0'
+      uses: actions/upload-artifact@v4
+      with:
+        name: apiwatch-briefs-${{ steps.where.outputs.key }}
+        path: ${{ inputs.briefs }}
+        if-no-files-found: ignore
+        overwrite: true
+    - name: comment on the pull request
+      if: inputs.comment == 'true' && github.event.pull_request.number && inputs.summary != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        PR: ${{ github.event.pull_request.number }}
+        AW_SUMMARY: ${{ inputs.summary }}
+        KEY: ${{ steps.where.outputs.key }}
+        HITS: ${{ steps.scan.outputs.hits }}
+      run: |
+        [ -f "$AW_SUMMARY" ] || { echo "::warning::apiwatch: no report to post"; exit 0; }
+        # one comment per PR and scanned path, written by a bot, edited in place; none until there's a hit
+        existing=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
+                     -q ".[] | select(.user.type == \"Bot\" and (.body | startswith(\"<!-- apiwatch:$KEY -->\"))) | .id" \
+                   | awk 'NR==1')
+        # fork and Dependabot PRs get a read-only token: warn instead of failing the job
+        if [ -n "$existing" ]; then
+          gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$existing" -F body=@"$AW_SUMMARY" > /dev/null \
+            || echo "::warning::apiwatch: couldn't update the PR comment (read-only token?)"
+        elif [ "${HITS:-0}" != "0" ]; then
+          gh pr comment "$PR" --repo "$GITHUB_REPOSITORY" --body-file "$AW_SUMMARY" \
+            || echo "::warning::apiwatch: couldn't comment on the PR (read-only token on fork PRs?)"
+        fi
+    - name: fail on breaking changes
+      if: always() && steps.scan.outputs.code != '' && steps.scan.outputs.code != '0'
+      shell: bash
+      env:
+        CODE: ${{ steps.scan.outputs.code }}
+      run: exit "$CODE"

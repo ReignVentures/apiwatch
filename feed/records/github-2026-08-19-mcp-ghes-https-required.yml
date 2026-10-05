@@ -1,0 +1,45 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-09-24: fix. Content verified against PR #3069 and the v1.10.0 README. Kept GITHUB_HOST/--gh-host (an http:// signature would miss hosts set through variables); excluded https values on the same line, so configs that are provably fine drop out and the rest need a look at the value.
+# Details from PR github/github-mcp-server#3069 (merged 2026-08-14). Only http:// GHES hosts are affected; the signatures match every GHES config, so hits need a look at the value.
+# 2026-09-24 attribution review: more https value spellings and loopback hosts excluded; .env files that hold the GitHub token now qualify.
+id: github-2026-08-19-mcp-ghes-https-required
+vendor: GitHub MCP Server
+surface: Server configuration --gh-host / GITHUB_HOST — http:// GitHub Enterprise Server hosts
+kind: mcp
+severity: breaking
+effective: '2026-08-19'
+summary: From v1.10.0, the GitHub MCP server rejects an http:// GitHub Enterprise Server host in --gh-host or GITHUB_HOST; only https (or loopback http) is accepted
+detail: Before v1.10.0 an http:// GHES host was accepted and used for every derived URL, so authenticated requests could carry the token over cleartext. HTTPS is now enforced centrally; http is permitted only for loopback hosts (localhost, 127.0.0.1, ::1). A configuration that sets an http:// GHES host now fails with the error "host must use https to avoid sending credentials over cleartext".
+signatures:
+- GITHUB_HOST
+- --gh-host
+context:
+- github-mcp-server
+- GITHUB_PERSONAL_ACCESS_TOKEN
+exclude:
+- GITHUB_HOST=https://
+- GITHUB_HOST="https://
+- 'GITHUB_HOST: https://'
+- 'GITHUB_HOST: "https://'
+- '"GITHUB_HOST": "https://'
+- '"GITHUB_HOST":"https://'
+- --gh-host=https://
+- --gh-host https://
+- '"--gh-host", "https://'
+- --gh-host="https://
+- 'GITHUB_HOST: ''https://'
+- GITHUB_HOST='https://
+- GITHUB_HOST=http://localhost
+- GITHUB_HOST=http://127.0.0.1
+source_url: https://github.com/github/github-mcp-server/releases/tag/v1.10.0
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- Enforced HTTPS for GitHub Enterprise hosts
+- url: https://api.github.com/repos/github/github-mcp-server/releases/tags/v1.10.0
+  text: '2026-08-19T17:36:14Z'
+- url: https://github.com/github/github-mcp-server/pull/3069
+  text: host must use https to avoid sending credentials over cleartext
+- url: https://github.com/github/github-mcp-server/pull/3069
+  text: '`http` is permitted **only** for loopback hosts'
+fix_hint: Set --gh-host / GITHUB_HOST to the https:// URL of your GHES instance (make sure it serves valid TLS) before upgrading to v1.10.0.

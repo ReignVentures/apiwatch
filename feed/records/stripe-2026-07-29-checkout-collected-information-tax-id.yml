@@ -1,0 +1,32 @@
+# Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-09-24: fix. Summary says public preview plainly; detail names the preview SDKs and the compatibility layer; added Go/.NET access paths. No context needed: the field doesn't exist in the GA SDK.
+# Scope: PUBLIC PREVIEW API version 2026-07-29.preview only. collected_information.tax_ids was itself a preview field (the changelog links it at api-version=2026-06-24.preview);
+# the GA SDKs (stripe-node v22.6.0 Checkout/Sessions.ts) have no collected_information.tax_ids. Removal ships in stripe-python v15.5.0b1 / stripe-node v22.5.0-beta.1 (pinned to 2026-07-29.preview).
+# Signatures are the dotted access paths: bare "tax_ids" would also hit customer_details.tax_ids, which this change doesn't touch.
+# 2026-09-24 attribution review: added the TypeScript non-null form.
+id: stripe-2026-07-29-checkout-collected-information-tax-id
+vendor: Stripe
+surface: Stripe API 2026-07-29.preview (public preview) — Checkout Session collected_information.tax_ids renamed to tax_id
+kind: rest
+severity: breaking
+effective: '2026-07-29'
+summary: In Stripe's public preview API version 2026-07-29.preview, the Checkout Session collected_information.tax_ids array was replaced by collected_information.tax_id, a single object or null
+detail: This applies only to callers on 2026-07-29.preview or a later preview version, or on the preview SDKs that pin it (stripe-python 15.5.0b1, stripe-node 22.5.0-beta.1). On those versions the tax_ids array property no longer exists, so code that reads or iterates it breaks. On older API versions a compatibility layer still returns tax_ids as a single-element array.
+signatures:
+- collected_information.tax_ids
+- collected_information?.tax_ids
+- CollectedInformation.TaxIDs
+- CollectedInformation.TaxIds
+- collected_information!.tax_ids
+source_url: https://docs.stripe.com/changelog/dahlia/2026-07-29/checkout-session-collected-information-tax-ids-rename.md
+verified: true
+verified_by: claude
+verified_on: '2026-09-24'
+evidence:
+- '`collected_information.tax_ids` array property no longer exists'
+- returns a single tax ID object, or `null` if no tax ID was collected
+- 'Stripe-Version: 2026-07-29.preview'
+- url: https://github.com/stripe/stripe-python/releases/tag/v15.5.0b1
+  text: Remove support for `tax_ids` on `Checkout.Session.CollectedInformation`
+- url: https://docs.stripe.com/sdks/versioning.md
+  text: uses preview API versions that are distinct from
+fix_hint: Before moving to 2026-07-29.preview, read collected_information.tax_id as a single tax ID object and handle null when no tax ID was collected, instead of iterating collected_information.tax_ids.
