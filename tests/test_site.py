@@ -159,3 +159,22 @@ def test_no_canonical_or_sitemap_without_a_base_url(tmp_path):
     out = tmp_path / "site"
     assert "canonical" not in (out / "index.html").read_text() and not (out / "sitemap.xml").exists()
     assert (out / "robots.txt").read_text() == "User-agent: *\nAllow: /\n"
+
+
+def test_every_page_has_the_ci_next_step(tmp_path):
+    build(tmp_path)
+    out = tmp_path / "site"
+    pages = [out / "index.html", out / "vendors" / "acme.html", out / "records" / "acme-2026-10-01-soon.html"]
+    for page in out.rglob("*.html"):
+        if page.name != "404.html":
+            assert page.read_text().count('<aside class="cta"') == 1, page
+    for page in pages:
+        html = page.read_text()
+        html = html[html.index('<aside class="cta"'):html.index("</aside>") + len("</aside>")]
+        assert "<script" not in html and " style=" not in html, page
+        assert "Catch this in CI" in html and "- uses: ReignVentures/apiwatch@v1</code></pre>" in html, page
+        assert 'href="https://github.com/ReignVentures/apiwatch"' in html, page
+        assert 'href="https://github.com/marketplace/actions/apiwatch-scan"' in html, page
+        assert "opens an issue when a new change lands on your code. $19 per month" in html and 'href="mailto:hello@reignventures.co"' in html, page
+        assert "—" not in html and "–" not in html, page
+    assert "Catch this in CI" not in (out / "404.html").read_text()

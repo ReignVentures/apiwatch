@@ -27,8 +27,20 @@ SEV_NOTE = {
     "additive": "New capability; nothing existing breaks.",
     "info": "Worth knowing; no action required.",
 }
-CTA = ("Does this touch your code? Run <code>apiwatch scan &lt;repo&gt;</code>. It finds the lines "
-       "this change lands on and writes a fix brief.")
+REPO_URL = "https://github.com/ReignVentures/apiwatch"
+MARKETPLACE_URL = "https://github.com/marketplace/actions/apiwatch-scan"
+PRO_EMAIL = "hello@reignventures.co"
+# the next step on every index, vendor and record page: add the free Action, or ask about Pro. Plain HTML, no script
+CTA = f"""<aside class="cta" aria-labelledby="ci">
+<h2 id="ci">Catch this in CI</h2>
+<p>Add two steps to a GitHub Actions job. Each run checks your code against the changes in this feed, and the
+build fails when a breaking or silent change lands on your code.</p>
+<pre><code>- uses: actions/checkout@v4
+- uses: ReignVentures/apiwatch@v1</code></pre>
+<p><a href="{REPO_URL}">Setup and options on GitHub</a> · <a href="{MARKETPLACE_URL}">GitHub Marketplace</a></p>
+<p class="meta">apiwatch Pro watches every repository in your GitHub organization each night, with nothing to add
+to your workflows, and opens an issue when a new change lands on your code. $19 per month. Email <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a> for early access.</p>
+</aside>"""
 
 
 def vendor_slug(vendor: str) -> str:
@@ -160,7 +172,7 @@ def _index(recs, by_vendor, today) -> str:
 {_split(recs, today, 0)}
 <h2>Vendors</h2>
 <div class="vendors">{vendors}</div>
-<aside class="cta">{CTA}</aside>
+{CTA}
 <script src="site.js" defer></script>"""
     return _page("API & MCP change feed", body)
 
@@ -168,7 +180,7 @@ def _index(recs, by_vendor, today) -> str:
 def _vendor_body(vendor, rs, today) -> str:
     return (f'<p class="crumb"><a href="../index.html">All changes</a></p><h1>{escape(vendor)}</h1>'
             f'<p class="meta">{len(rs)} change{"s" if len(rs) != 1 else ""}</p>'
-            + _split(rs, today, 1) + f'<aside class="cta">{CTA}</aside>')
+            + _split(rs, today, 1) + CTA)
 
 
 def _record_page(r: ChangeRecord, today: date) -> str:
@@ -223,7 +235,7 @@ def _record_page(r: ChangeRecord, today: date) -> str:
 <h2>Source</h2>
 <p>{src}</p>
 </article>
-<aside class="cta">{CTA}</aside>"""
+{CTA}"""
     return _page(r.summary, body, depth=1)
 
 
@@ -342,6 +354,9 @@ h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 .sevnote { color: var(--muted); }
 .sigs code { display: inline-block; margin: 0 6px 6px 0; }
 .cta { margin: 40px 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+.cta h2 { margin-top: 0; }
+.cta pre { margin: 12px 0; padding: 10px 12px; overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+.cta pre code { border: 0; padding: 0; background: none; overflow-wrap: normal; }
 footer.site { color: var(--muted); font-size: 13px; padding-bottom: 40px; }
 @media (max-width: 560px) {
   .rec { grid-template-columns: 1fr; gap: 2px; }
