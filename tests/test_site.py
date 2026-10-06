@@ -178,3 +178,98 @@ def test_every_page_has_the_ci_next_step(tmp_path):
         assert "opens an issue when a new change lands on your code. $19 per month" in html and 'href="mailto:hello@reignventures.co"' in html, page
         assert "—" not in html and "–" not in html, page
     assert "Catch this in CI" not in (out / "404.html").read_text()
+
+
+def id_fixture(tmp_path) -> Path:
+    """Model ids, a code fragment, scoped records (context, sdk with repo_context, files), a non-model change,
+    spellings that slug the same, a deprecation, an id with a past and an upcoming record, and "index"."""
+    d = tmp_path / "idrecs"
+    d.mkdir()
+    rows = [
+        rec("acme-2026-12-01-model", summary="Acme retires acme-pro-2.0", effective="2026-12-01", kind="model",
+            signatures=["acme-pro-2.0", "output_format={", "acme-shared"], fix_hint="Move to acme-pro-3.", **REVIEWED),
+        rec("acme-2026-06-01-old", summary="Acme retired acme-lite", effective="2026-06-01", kind="model",
+            signatures=["acme-lite", "acme.lite", "ACME-LITE", "acme-shared"], fix_hint="Use acme-pro-3.", **REVIEWED),
+        rec("acme-2026-11-01-scoped", summary="Acme renames limit", effective="2026-11-01",
+            signatures=["limit_rows"], context=["acme"], **REVIEWED),
+        rec("acme-2026-09-30-sdk", summary="Acme SDK 16 renames Reversal", effective="2026-09-30", kind="sdk",
+            signatures=["acme.Reversal"], repo_context=["dep:pypi:acme@16."], **REVIEWED),
+        rec("acme-2026-08-30-files", summary="Acme Go client drops Foo", effective="2026-08-30",
+            signatures=["FooClient"], files=["*.go"], **REVIEWED),
+        rec("beta-2026-10-15-silent", vendor="Beta", summary="Beta serves beta-fast-1 from a new model", effective="2026-10-15",
+            kind="model", severity="silent", signatures=["beta-fast-1", "Index"], fix_hint="Re-check output.", **REVIEWED),
+        rec("beta-2026-10-20-rest", vendor="Beta", summary="Beta preview API drops /v2/search", effective="2026-10-20",
+            signatures=["/v2/search"], **REVIEWED),
+        rec("gamma-2026-09-10-dep", vendor="Gamma", summary="Gamma deprecated gamma-old-1", effective="2026-09-10",
+            kind="model", severity="deprecation", signatures=["gamma-old-1"],
+            **{**REVIEWED, "verified_on": "2026-09-01"}),
+        rec("delta-2026-09-15-info", vendor="Delta", summary="Delta notes a change", effective="2026-09-15",
+            severity="info", **REVIEWED),
+        rec("beta-2027-04-01-dep", vendor="Beta", summary="Beta will remove beta-model-5 on Apr 1, 2027",
+            effective="2027-04-01", kind="model", severity="deprecation", signatures=["beta-model-5"],
+            fix_hint="Plan a move to beta-model-6.", **REVIEWED),
+    ]
+    for r in rows:
+        (d / f"{r['id']}.yml").write_text(yaml.safe_dump(r))
+    return d
+
+
+def test_identifier_pages(tmp_path):
+    build(tmp_path, records=id_fixture(tmp_path), base_url="https://feed.example.com")
+    out = tmp_path / "site"
+    slugs = {p.stem for p in (out / "ids").glob("*.html")}
+    # no pages for code fragments or scoped records; spellings that slug the same share one page; "index" is reserved
+    # (model ids only: the non-model /v2/search change keeps to its record page)
+    assert slugs == {"acme-pro-2-0", "acme-lite", "acme-shared", "beta-fast-1", "index-id", "beta-model-5", "gamma-old-1"}
+    page = (out / "ids" / "acme-pro-2-0.html").read_text()
+    assert "<title>acme-pro-2.0 retirement: Dec 1, 2026 · apiwatch</title>" in page
+    assert '<p class="lede">acme-pro-2.0 stops working on Dec 1, 2026.</p>' in page
+    assert 'content="acme-pro-2.0 stops working on Dec 1, 2026. Move to acme-pro-3."' in page
+    assert 'href="../records/acme-2026-12-01-model.html"' in page and page.count('<aside class="cta"') == 1
+    assert '<link rel="canonical" href="https://feed.example.com/ids/acme-pro-2-0">' in page
+    lite = (out / "ids" / "acme-lite.html").read_text()
+    assert "<code>acme-lite</code> retirement" in lite and "stopped working on Jun 1, 2026" in lite
+    assert "Also written as <code>ACME-LITE</code>, <code>acme.lite</code>." in lite
+    # an id with a past and an upcoming record leads with the upcoming date and lists both
+    shared = (out / "ids" / "acme-shared.html").read_text()
+    assert '<p class="lede">acme-shared stops working on Dec 1, 2026.</p>' in shared
+    assert "acme-2026-06-01-old.html" in shared and "acme-2026-12-01-model.html" in shared
+    silent = (out / "ids" / "beta-fast-1.html").read_text()
+    assert "<title>beta-fast-1 behavior change: Oct 15, 2026 · apiwatch</title>" in silent
+    assert "changes behavior on Oct 15, 2026" in silent
+    # a deprecation never claims the date is when it stops working or became deprecated
+    dep = (out / "ids" / "beta-model-5.html").read_text()
+    assert ("beta-model-5 is deprecated: it still works, and removal is announced. Key date: Apr 1, 2027.") in dep
+    assert "stops working" not in dep and "deprecated from" not in dep
+    gone = (out / "ids" / "gamma-old-1.html").read_text()     # past key date: no claim that it still works
+    assert "gamma-old-1 is deprecated, and removal was announced. Key date: Sep 10, 2026." in gone and "still works" not in gone
+    # record pages link their signatures to id pages, but not the ones without a page
+    record = (out / "records" / "acme-2026-12-01-model.html").read_text()
+    assert '<a href="../ids/acme-pro-2-0.html"><code>acme-pro-2.0</code></a>' in record
+    assert "<code>output_format={</code>" in record and "ids/output" not in record
+    assert "ids/" not in (out / "records" / "acme-2026-09-30-sdk.html").read_text().split('<aside class="cta"')[0]
+    ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    urls = {e.findtext("s:loc", namespaces=ns): e.findtext("s:lastmod", namespaces=ns)
+            for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url", ns)}
+    assert "https://feed.example.com/ids/acme-pro-2-0" in urls and "https://feed.example.com/ids/beta-fast-1" in urls
+    # a page whose date has passed counts that date as a change (its wording flipped to the past tense)
+    assert urls["https://feed.example.com/ids/acme-lite"] == "2026-09-24"
+    assert urls["https://feed.example.com/ids/gamma-old-1"] == "2026-09-10"   # passed date is later than the review
+
+
+def test_page_descriptions(tmp_path):
+    build(tmp_path, records=id_fixture(tmp_path))
+    out = tmp_path / "site"
+    record = (out / "records" / "acme-2026-12-01-model.html").read_text()
+    assert '<meta name="description" content="Acme retires acme-pro-2.0. Takes effect Dec 1, 2026. Move to acme-pro-3.">' in record
+    vendor = (out / "vendors" / "acme.html").read_text()
+    assert "<title>Acme API deprecations and breaking changes · apiwatch</title>" in vendor
+    assert "5 tracked Acme changes: model retirements and breaking changes, each with" in vendor
+    beta = (out / "vendors" / "beta.html").read_text()
+    assert "3 tracked Beta changes: breaking change, silent change and deprecation, each with" in beta
+    assert "retirement" not in beta.split("<main>")[0]
+    assert 'content="1 tracked Delta change, with the date and what to do."' in (out / "vendors" / "delta.html").read_text()
+    assert f'content="{site.TAGLINE}"' in (out / "index.html").read_text()
+    long = site._clip("word " * 60)
+    assert len(long) <= 158 and long.endswith("...") and not long.endswith("....")
+    assert site._clip("x" * 200).endswith("...") and len(site._clip("x" * 200)) <= 158

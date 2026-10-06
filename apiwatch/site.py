@@ -56,6 +56,7 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
     out.mkdir(parents=True, exist_ok=True)
     (out / "records").mkdir(exist_ok=True)
     (out / "vendors").mkdir(exist_ok=True)
+    (out / "ids").mkdir(exist_ok=True)
     (out / "style.css").write_text(CSS)
     (out / "site.js").write_text(JS)
     (out / "_headers").write_text(HEADERS)   # Cloudflare Pages response headers
@@ -66,11 +67,16 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
 
     # canonical URLs are the clean paths Cloudflare Pages serves (it 308-redirects "x.html" to "x"), on base_url
     (out / "index.html").write_text(_canonical(_index(recs, by_vendor, today), base, ""))
+    ids = id_pages(recs)
+    id_links = {sig: slug for slug, (sigs, _) in ids.items() for sig in sigs}
     for r in recs:
-        (out / "records" / f"{r.id}.html").write_text(_canonical(_record_page(r, today), base, f"records/{r.id}"))
+        (out / "records" / f"{r.id}.html").write_text(_canonical(_record_page(r, today, id_links), base, f"records/{r.id}"))
     for vendor, rs in by_vendor.items():
         (out / "vendors" / f"{vendor_slug(vendor)}.html").write_text(_canonical(
-            _page(f"{vendor} changes", _vendor_body(vendor, rs, today), depth=1), base, f"vendors/{vendor_slug(vendor)}"))
+            _page(f"{vendor} API deprecations and breaking changes", _vendor_body(vendor, rs, today), depth=1,
+                  description=_vendor_description(vendor, rs, today)), base, f"vendors/{vendor_slug(vendor)}"))
+    for slug, (sigs, rs) in ids.items():
+        (out / "ids" / f"{slug}.html").write_text(_canonical(_id_page(sigs, rs, today), base, f"ids/{slug}"))
     # served for any unknown path at any depth, so links are root-absolute. Without it Cloudflare Pages
     # treats the site as a SPA and answers every unknown path with index.html and a 200
     (out / "404.html").write_text(_page("Not found", '<h1>Not found</h1><p>No page here. '
@@ -79,7 +85,7 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
     (out / "feed.xml").write_text(_atom(recs, base, today))
     (out / "robots.txt").write_text("User-agent: *\nAllow: /\n" + (f"Sitemap: {base}sitemap.xml\n" if base else ""))
     if base:
-        (out / "sitemap.xml").write_text(_sitemap(recs, by_vendor, base, today))
+        (out / "sitemap.xml").write_text(_sitemap(recs, by_vendor, ids, base, today))
     return len(recs), out / "index.html"
 
 
@@ -89,17 +95,20 @@ def _canonical(html: str, base: str, path: str) -> str:
     return html.replace("</head>", f'<link rel="canonical" href="{escape(base + path)}">\n</head>', 1)
 
 
-def _sitemap(recs, by_vendor, base, today) -> str:
+def _sitemap(recs, by_vendor, ids, base, today) -> str:
     urls = [(base, today.isoformat())]
     urls += [(f"{base}vendors/{vendor_slug(v)}", max(r.verified_on or r.effective for r in rs)) for v, rs in by_vendor.items()]
     urls += [(f"{base}records/{r.id}", r.verified_on or r.effective) for r in recs]
+    # an id page's wording turns from "stops" to "stopped" once a date passes, so that date counts as a change
+    urls += [(f"{base}ids/{slug}", max(max(r.verified_on or r.effective, r.effective if r.effective <= today.isoformat() else "")
+                                       for r in rs)) for slug, (_, rs) in ids.items()]
     body = "".join(f"<url><loc>{xesc(u)}</loc><lastmod>{d}</lastmod></url>" for u, d in urls)
     return f'<?xml version="1.0" encoding="utf-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>\n'
 
 
 # ---------- pages ----------
 
-def _page(title: str, body: str, depth: int = 0, up: str | None = None) -> str:
+def _page(title: str, body: str, depth: int = 0, up: str | None = None, description: str = TAGLINE) -> str:
     up = "../" * depth if up is None else up
     return f"""<!doctype html>
 <html lang="en">
@@ -107,7 +116,7 @@ def _page(title: str, body: str, depth: int = 0, up: str | None = None) -> str:
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{escape(title)} · {SITE_TITLE}</title>
-<meta name="description" content="{escape(TAGLINE)}">
+<meta name="description" content="{escape(description)}">
 <link rel="stylesheet" href="{up}style.css">
 <link rel="alternate" type="application/atom+xml" title="{SITE_TITLE}" href="{up}feed.xml">
 <link rel="alternate" type="application/feed+json" title="{SITE_TITLE}" href="{up}feed.json">
@@ -183,14 +192,16 @@ def _vendor_body(vendor, rs, today) -> str:
             + _split(rs, today, 1) + CTA)
 
 
-def _record_page(r: ChangeRecord, today: date) -> str:
+def _record_page(r: ChangeRecord, today: date, id_links: dict[str, str] | None = None) -> str:
+    id_links = id_links or {}
     when = "Takes effect" if r.effective > today.isoformat() else "Took effect"
     if r.human_verified:
         flag = f'<p class="meta">Verified against the source by {escape(r.verified_by)} on {_fmt(r.verified_on)}.</p>'
     else:
         flag = (f'<p class="meta checked">Reviewed against the vendor source on {_fmt(r.verified_on)} (AI-assisted review). '
                 'Key facts are re-checked against the source daily.</p>')
-    sigs = "".join(f"<code>{escape(s)}</code>" for s in r.signatures) or "<span>None recorded</span>"
+    sigs = "".join(f'<a href="../ids/{id_links[s]}.html"><code>{escape(s)}</code></a>' if s in id_links
+                   else f"<code>{escape(s)}</code>" for s in r.signatures) or "<span>None recorded</span>"
     def _words(items):
         return " or ".join(" + ".join(f"<code>{escape(w)}</code>" for w in ([c] if isinstance(c, str) else c)) for c in items)
     scope = []
@@ -236,7 +247,118 @@ def _record_page(r: ChangeRecord, today: date) -> str:
 <p>{src}</p>
 </article>
 {CTA}"""
-    return _page(r.summary, body, depth=1)
+    return _page(r.summary, body, depth=1, description=_clip(f"{_sentence(r.summary)} {when} {_fmt(r.effective)}. {r.fix_hint}"))
+
+
+# ---------- identifier pages ----------
+
+# model ids only, from records with no `context`, `files` or `repo_context` scope: a model retirement applies to
+# every caller, so a one line answer ("x stops working on <date>") is true as stated. API, SDK and MCP changes are
+# often tied to an API version, SDK major or protocol revision that a one line answer can't carry, so they stay
+# on their record pages. Code fragments like `output_format={` never get a page
+_IDENT = re.compile(r"^/?[A-Za-z0-9][A-Za-z0-9._/-]*[A-Za-z0-9]$")
+
+
+def id_slug(sig: str) -> str:
+    # dots become dashes too: Cloudflare Pages serves x.html at /x, and a dotted path could be taken for a file.
+    # "index" is reserved: ids/index.html would be served at /ids/
+    slug = re.sub(r"-+", "-", re.sub(r"[^a-z0-9_-]", "-", sig.lower())).strip("-_")
+    return "index-id" if slug == "index" else slug
+
+
+def id_pages(recs: list[ChangeRecord]) -> dict[str, tuple[list[str], list[ChangeRecord]]]:
+    """slug -> (every spelling that maps to it, sorted; the records). Spellings that differ only in case or
+    punctuation share one page, so a slug never depends on the order records or signatures were written in."""
+    pages: dict[str, tuple[list[str], list[ChangeRecord]]] = {}
+    for r in recs:
+        if r.kind != "model" or r.context or r.files or r.repo_context:
+            continue
+        for sig in r.signatures:
+            if len(sig) < 4 or not _IDENT.match(sig) or not re.search(r"[A-Za-z]", sig):
+                continue
+            sigs, rs = pages.setdefault(id_slug(sig), ([], []))
+            if sig not in sigs:
+                sigs.append(sig)
+            if r not in rs:
+                rs.append(r)
+    return {slug: (sorted(sigs, key=lambda x: (x.lower(), x != x.lower(), x)), sorted(rs, key=lambda r: (r.effective, r.id)))
+            for slug, (sigs, rs) in sorted(pages.items())}
+
+
+def _what_happens(r: ChangeRecord, today: date) -> tuple[str, str]:
+    """(what happens, title noun) for an identifier under this record. Each phrase claims only what the
+    severity means: breaking = calls fail after the date, silent = behavior changes on it, deprecation = still
+    works with removal announced (its date may be the removal date, so no verb is tied to it)."""
+    future = r.effective > today.isoformat()
+    when = _fmt(r.effective)
+    if r.severity == "breaking":
+        return (f"stops working on {when}" if future else f"stopped working on {when}",
+                "retirement" if r.kind == "model" else "breaking change")
+    if r.severity == "silent":
+        return (f"changes behavior on {when}" if future else f"changed behavior on {when}", "behavior change")
+    if r.severity == "deprecation":
+        # once the key date passes it may have been the shutdown, so stop saying it still works
+        return (f"is deprecated: it still works, and removal is announced. Key date: {when}" if future
+                else f"is deprecated, and removal was announced. Key date: {when}", "deprecation")
+    return (f"changes on {when}" if future else f"changed on {when}", "change")
+
+
+def _id_page(sigs: list[str], rs: list[ChangeRecord], today: date) -> str:
+    sig = sigs[0]
+    upcoming = [r for r in rs if r.effective > today.isoformat()]
+    lead = upcoming[0] if upcoming else rs[-1]          # the next date to act on, else the most recent one
+    what, noun = _what_happens(lead, today)
+    answer = f"{sig} {what}."
+    also = ("<p class=\"meta\">Also written as " + ", ".join(f"<code>{escape(x)}</code>" for x in sigs[1:]) + ".</p>"
+            if len(sigs) > 1 else "")
+    items = "".join(
+        f'<li><p><strong>{escape(r.vendor)}</strong> {_badges(r)}</p>'
+        f'<p><code>{escape(sig)}</code> {escape(_what_happens(r, today)[0])}. '
+        f'<a href="../records/{r.id}.html">{escape(r.summary)}</a></p>'
+        f'<p><strong>What to do:</strong> {escape(r.fix_hint) or "See the record."}</p></li>' for r in rs)
+    body = f"""<p class="crumb"><a href="../index.html">All changes</a> / <a href="../vendors/{vendor_slug(lead.vendor)}.html">{escape(lead.vendor)}</a></p>
+<article class="record">
+<h1><code>{escape(sig)}</code> {noun}</h1>
+<p class="lede">{escape(answer)}</p>
+{also}
+<ul class="idrecs">{items}</ul>
+</article>
+{CTA}"""
+    title = f"{sig} {noun}: {_fmt(lead.effective)}"
+    return _page(title, body, depth=1, description=_clip(f"{answer} {lead.fix_hint}"))
+
+
+_KINDS = [("retirement", "model retirement"), ("breaking", "breaking change"), ("silent", "silent change"),
+          ("deprecation", "deprecation")]
+
+
+def _vendor_description(vendor: str, rs: list[ChangeRecord], today: date) -> str:
+    counts: dict[str, int] = defaultdict(int)
+    for r in rs:
+        counts["retirement" if (r.severity == "breaking" and r.kind == "model") else r.severity] += 1
+    names = [label + ("s" if counts[key] > 1 else "") for key, label in _KINDS if counts[key]]
+    listed = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1] if names else ""
+    nxt = sorted((r for r in rs if r.effective > today.isoformat()), key=lambda r: r.effective)
+    tail = f" Next: {_sentence(nxt[0].summary)}" if nxt else ""
+    each = "each with" if len(rs) != 1 else "with"
+    listed = f": {listed}," if listed else ","
+    return _clip(f"{len(rs)} tracked {vendor} change{'s' if len(rs) != 1 else ''}{listed} {each} the date "
+                 f"and what to do.{tail}")
+
+
+def _sentence(text: str) -> str:
+    text = text.strip()
+    return text if not text or text[-1] in ".!?" else text + "."
+
+
+def _clip(text: str, n: int = 158) -> str:
+    text = " ".join(text.split())
+    if len(text) <= n:
+        return text
+    cut = text[:n - 3]
+    if " " in cut:
+        cut = cut.rsplit(" ", 1)[0]
+    return cut.rstrip(",;:.") + "..."
 
 
 # ---------- feeds ----------
@@ -353,6 +475,9 @@ h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 .flag { background: var(--flag-bg); border: 1px solid var(--flag-line); border-radius: 8px; padding: 12px 14px; margin: 16px 0; }
 .sevnote { color: var(--muted); }
 .sigs code { display: inline-block; margin: 0 6px 6px 0; }
+.idrecs { list-style: none; padding: 0; margin: 16px 0 0; }
+.idrecs li { border-top: 1px solid var(--line); padding: 8px 0; }
+.idrecs p { margin: 4px 0; }
 .cta { margin: 40px 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
 .cta h2 { margin-top: 0; }
 .cta pre { margin: 12px 0; padding: 10px 12px; overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
