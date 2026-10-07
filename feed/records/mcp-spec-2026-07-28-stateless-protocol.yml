@@ -1,4 +1,5 @@
 # Independent review (docs/REVIEW.md) on 2026-09-24: fixed (minor). The 12-month window covers the deprecated features, not the removed initialize handshake.
+# 2026-10-06 field-test scope fix: excluded ui/notifications/initialized, the MCP Apps view-to-host message (vercel/ai mcp-apps bridge), which this revision doesn't remove.
 id: mcp-spec-2026-07-28-stateless-protocol
 vendor: MCP specification
 surface: Model Context Protocol revision 2026-07-28
@@ -8,6 +9,7 @@ effective: "2026-07-28"
 summary: MCP 2026-07-28 removes the initialize handshake and Mcp-Session-Id, and deprecates Roots, Sampling, Logging, and the HTTP+SSE transport
 detail: The protocol is now stateless. No initialize or notifications/initialized; each request carries its protocol version and client capabilities in _meta; a new server/discover RPC advertises supported versions. The Streamable HTTP transport drops Mcp-Session-Id, SSE resumability (Last-Event-ID), and the GET endpoint (replaced by subscriptions/listen). ping, logging/setLevel, and notifications/roots/list_changed are removed. Server-initiated requests move to the multi-round-trip pattern. Deprecated with a minimum 12-month window — Roots, Sampling, Logging, HTTP+SSE, includeContext thisServer/allServers, and Dynamic Client Registration. Clients and servers pinned to older revisions keep working only as long as their counterpart still supports them.
 signatures: ["notifications/initialized", "Mcp-Session-Id", "sampling/createMessage", "roots/list", "logging/setLevel"]
+exclude: ["ui/notifications/initialized"]
 source_url: "https://modelcontextprotocol.io/specification/2026-07-28/changelog"
 verified: true
 verified_by: claude

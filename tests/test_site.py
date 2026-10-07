@@ -1,4 +1,5 @@
 import json
+import re
 import xml.etree.ElementTree as ET
 from datetime import date
 from pathlib import Path
@@ -131,7 +132,8 @@ def test_pages_work_under_a_strict_csp(tmp_path):
     assert (out / "site.js").exists()
     for page in out.rglob("*.html"):
         html = page.read_text()
-        assert not re.search(r"<script(?![^>]*\bsrc=)[^>]*>", html), page      # no inline scripts
+        # no inline scripts. JSON-LD data blocks are allowed: browsers never execute them, so the CSP doesn't apply
+        assert not re.search(r'<script(?![^>]*\bsrc=)(?! type="application/ld\+json">)[^>]*>', html), page
         assert " style=" not in html and " on" + "click=" not in html, page    # no inline styles/handlers
 
 
@@ -139,6 +141,7 @@ def test_404_page_uses_root_absolute_links(tmp_path):
     build(tmp_path)
     html = (tmp_path / "site" / "404.html").read_text()
     assert 'href="/style.css"' in html and 'href="/index.html"' in html and "../" not in html
+    assert 'href="/upcoming.html"' in html
 
 
 def test_canonical_urls_sitemap_and_robots(tmp_path):
@@ -150,7 +153,8 @@ def test_canonical_urls_sitemap_and_robots(tmp_path):
     ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     locs = [e.text for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url/s:loc", ns)]
     assert "https://feed.example.com/records/acme-2026-10-01-soon" in locs and "https://feed.example.com/vendors/beta-mcp" in locs
-    assert not any("draft" in u or "demo" in u for u in locs) and len(locs) == 1 + 2 + 3
+    assert not any("draft" in u or "demo" in u for u in locs) and len(locs) == 1 + 1 + 1 + 2 + 3   # index, upcoming, pro
+    assert "https://feed.example.com/upcoming" in locs
     assert "Sitemap: https://feed.example.com/sitemap.xml" in (out / "robots.txt").read_text()
 
 
@@ -166,7 +170,7 @@ def test_every_page_has_the_ci_next_step(tmp_path):
     out = tmp_path / "site"
     pages = [out / "index.html", out / "vendors" / "acme.html", out / "records" / "acme-2026-10-01-soon.html"]
     for page in out.rglob("*.html"):
-        if page.name != "404.html":
+        if page.name != "404.html" and page.parent.name != "pro":     # the Pro pages are the next step
             assert page.read_text().count('<aside class="cta"') == 1, page
     for page in pages:
         html = page.read_text()
@@ -175,7 +179,7 @@ def test_every_page_has_the_ci_next_step(tmp_path):
         assert "Catch this in CI" in html and "- uses: ReignVentures/apiwatch@v1</code></pre>" in html, page
         assert 'href="https://github.com/ReignVentures/apiwatch"' in html, page
         assert 'href="https://github.com/marketplace/actions/apiwatch-scan"' in html, page
-        assert "opens an issue when a new change lands on your code. $19 per month" in html and 'href="mailto:hello@reignventures.co"' in html, page
+        assert "opens an issue when a new change lands on your code. $19 per month" in html and '<a href="/pro/">How Pro works</a>' in html, page
         assert "—" not in html and "–" not in html, page
     assert "Catch this in CI" not in (out / "404.html").read_text()
 
@@ -273,3 +277,185 @@ def test_page_descriptions(tmp_path):
     long = site._clip("word " * 60)
     assert len(long) <= 158 and long.endswith("...") and not long.endswith("....")
     assert site._clip("x" * 200).endswith("...") and len(site._clip("x" * 200)) <= 158
+
+
+def upcoming_fixture(tmp_path) -> Path:
+    """Build date 2026-09-23, so the 180 day window runs through 2027-03-22."""
+    d = tmp_path / "uprecs"
+    d.mkdir()
+    rows = [
+        rec("acme-2026-09-22-past", summary="Acme dropped old paging", effective="2026-09-22", **REVIEWED),
+        rec("acme-2026-09-23-today", summary="Acme retires today-1", effective="2026-09-23", kind="model", **REVIEWED),
+        rec("beta-2026-10-15-dep", vendor="Beta", summary="Beta deprecates beta-2", effective="2026-10-15",
+            severity="deprecation", fix_hint="Plan a move.", **REVIEWED),
+        rec("acme-2026-10-15-silent", summary="Acme changes rounding", effective="2026-10-15", severity="silent", **REVIEWED),
+        rec("acme-2027-03-22-edge", summary="Acme retires edge-1", effective="2027-03-22", **REVIEWED),
+        rec("acme-2027-03-23-out", summary="Acme retires late-1", effective="2027-03-23", **REVIEWED),
+        rec("acme-2026-11-01-draft", summary="Acme draft change", effective="2026-11-01"),
+        rec("example-2026-12-01-demo", summary="Made-up demo", effective="2026-12-01", illustrative=True, **REVIEWED),
+    ]
+    for r in rows:
+        (d / f"{r['id']}.yml").write_text(yaml.safe_dump(r))
+    return d
+
+
+def test_upcoming_page(tmp_path):
+    build(tmp_path, records=upcoming_fixture(tmp_path), base_url="https://feed.example.com")
+    out = tmp_path / "site"
+    page = (out / "upcoming.html").read_text()
+    assert "<title>Upcoming API and model retirements and changes · apiwatch</title>" in page
+    assert '<link rel="canonical" href="https://feed.example.com/upcoming">' in page
+    assert "from Sep 23, 2026 through Mar 22, 2027" in page and "4 changes in the next 180 days" in page
+    # today and the last day of the window are in; yesterday, day 181, drafts and illustrative records are out
+    ids = re.findall(r'href="records/([^"]+)\.html"', page)
+    assert ids == ["acme-2026-09-23-today", "acme-2026-10-15-silent", "beta-2026-10-15-dep", "acme-2027-03-22-edge"]
+    assert [m for m in re.findall(r"<h2[^>]*>([^<]+)</h2>", page) if m != "Catch this in CI"] == [
+        "September 2026", "October 2026", "March 2027"]
+    row = page[page.index('href="records/beta-2026-10-15-dep.html"') - 400:]
+    assert '<time datetime="2026-10-15">Oct 15, 2026</time>' in row and ">Beta</a>" in row and ">Deprecation<" in row
+    assert ">Beta deprecates beta-2</a>" in row
+    assert page.count('<aside class="cta"') == 1 and page.rindex("</ul>") < page.index('<aside class="cta"')
+    assert ('content="4 tracked changes dated Sep 23, 2026 to Mar 22, 2027: model retirement, breaking '
+            'change, silent change and deprecation. By month, with what to do."') in page
+    assert "—" not in page and "–" not in page
+    index = (out / "index.html").read_text()
+    assert 'href="upcoming.html"' in index.split("<main>")[1]          # linked from the index body, not only the nav
+
+
+def test_upcoming_page_says_so_when_nothing_is_due(tmp_path):
+    site.build(fixture(tmp_path), tmp_path / "later", today=date(2030, 1, 1))
+    page = (tmp_path / "later" / "upcoming.html").read_text()
+    assert "<p>No tracked changes are dated between Jan 1, 2030 and Jun 30, 2030.</p>" in page
+    assert '<ul class="recs">' not in page and page.count('<aside class="cta"') == 1
+    assert 'content="No tracked API, model or MCP changes are dated between Jan 1, 2030 and Jun 30, 2030."' in page
+
+
+def _ld(html: str) -> dict:
+    blocks = re.findall(r'<script type="application/ld\+json">(.*?)</script>', html, re.S)
+    assert len(blocks) == 1
+    return json.loads(blocks[0])
+
+
+def test_structured_data_on_record_and_id_pages(tmp_path):
+    build(tmp_path, records=id_fixture(tmp_path), base_url="https://feed.example.com")
+    out = tmp_path / "site"
+    ld = _ld((out / "records" / "acme-2026-12-01-model.html").read_text())
+    assert ld == {"@context": "https://schema.org", "@type": "TechArticle", "headline": "Acme retires acme-pro-2.0",
+                  "description": "Acme retires acme-pro-2.0. Takes effect Dec 1, 2026. Move to acme-pro-3.",
+                  "about": {"@type": "Thing", "name": "s"}, "inLanguage": "en",
+                  "publisher": {"@type": "Organization", "name": "Reign Ventures", "url": "https://reignventures.co"},
+                  "url": "https://feed.example.com/records/acme-2026-12-01-model", "dateModified": "2026-09-24",
+                  "isBasedOn": "https://v.example/changelog"}
+    idl = _ld((out / "ids" / "acme-lite.html").read_text())
+    assert idl["headline"] == "acme-lite retirement: Jun 1, 2026" and idl["about"] == {"@type": "Thing", "name": "acme-lite"}
+    assert idl["url"] == "https://feed.example.com/ids/acme-lite" and idl["dateModified"] == "2026-09-24"
+    assert _ld((out / "ids" / "gamma-old-1.html").read_text())["dateModified"] == "2026-09-10"   # as in the sitemap
+    assert "datePublished" not in idl and "datePublished" not in ld
+    # a passed date changes a record page's wording ("Took effect"), so it counts as a change there too
+    past = (out / "records" / "gamma-2026-09-10-dep.html").read_text()
+    assert _ld(past)["dateModified"] == "2026-09-10"
+    ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    urls = {e.findtext("s:loc", namespaces=ns): e.findtext("s:lastmod", namespaces=ns)
+            for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url", ns)}
+    assert urls["https://feed.example.com/records/gamma-2026-09-10-dep"] == "2026-09-10"
+    assert urls["https://feed.example.com/records/acme-2026-12-01-model"] == "2026-09-24"
+    # the data block sits in <head>
+    record = (out / "records" / "acme-2026-12-01-model.html").read_text()
+    assert record.index("application/ld+json") < record.index("</head>")
+    # only record and id pages carry it
+    for page in [out / "index.html", out / "upcoming.html", out / "vendors" / "acme.html", out / "404.html"]:
+        assert "application/ld+json" not in page.read_text(), page
+
+
+def test_structured_data_cannot_break_out_of_its_script_element(tmp_path):
+    recs = tmp_path / "recs"
+    recs.mkdir()
+    evil = "</script><script>alert(1)</script> <!-- & -->"
+    (recs / "x.yml").write_text(yaml.safe_dump(rec(
+        "x-2026-01-01-evil", summary=evil, surface="</SCRIPT>", kind="model", signatures=["evil-model-1"],
+        **{**REVIEWED, "source_url": "javascript:alert(1)"})))
+    build(tmp_path, records=recs)
+    for page in [tmp_path / "site" / "records" / "x-2026-01-01-evil.html", tmp_path / "site" / "ids" / "evil-model-1.html"]:
+        html = page.read_text()
+        start = html.index('<script type="application/ld+json">') + len('<script type="application/ld+json">')
+        block = html[start:html.index("</script>", start)]
+        assert not set("<>&") & set(block), page
+        assert html.lower().count("</script>") == 1 and "<script>" not in html, page
+        assert "isBasedOn" not in _ld(html)                     # never a non-http(s) source
+    assert _ld((tmp_path / "site" / "records" / "x-2026-01-01-evil.html").read_text())["headline"] == evil
+
+
+def test_readme_summary_counts_published_records_only(tmp_path):
+    from apiwatch.models import load_records
+    md = site.readme_summary(load_records(fixture(tmp_path)), date(2026, 9, 23), "https://feed.example.com/")
+    assert md.startswith("## What it caught\n")
+    assert "The feed holds 3 reviewed changes" in md
+    assert "* **By vendor:** Acme 2, Beta MCP 1\n" in md and "* **By severity:** breaking 3\n" in md
+    assert "[everything in the next 180 days](https://feed.example.com/upcoming)" in md
+    assert ("* **Oct 1, 2026**, Acme, breaking: [Acme retires widget-1]"
+            "(https://feed.example.com/records/acme-2026-10-01-soon)") in md
+    assert "draft" not in md and "Made-up" not in md and "demo" not in md
+    assert "—" not in md and "–" not in md
+
+
+def test_readme_summary_lists_the_next_five_dates(tmp_path):
+    from apiwatch.models import load_records
+    recs = load_records(id_fixture(tmp_path))
+    md = site.readme_summary(recs, date(2026, 9, 23), "https://feed.example.com")
+    nxt = [line for line in md.splitlines() if line.startswith("* **") and not line.startswith("* **By")]
+    assert [line.split("**")[1] for line in nxt] == ["Sep 30, 2026", "Oct 15, 2026", "Oct 20, 2026", "Nov 1, 2026",
+                                                     "Dec 1, 2026"]
+    assert "Apr 1, 2027" not in md
+    assert "* No dated changes ahead in the feed right now." in site.readme_summary(recs, date(2030, 1, 1), "https://x.example")
+    # a record dated today still counts as ahead; records that failed the source check are left out, as on the site
+    md = site.readme_summary(recs, date(2026, 9, 30), "https://x.example", exclude={"beta-2026-10-15-silent"})
+    assert "* **Sep 30, 2026**, Acme" in md and "beta-2026-10-15-silent" not in md and "Beta 2," in md
+
+
+def test_readme_summary_escapes_markdown():
+    from apiwatch.models import ChangeRecord
+    r = ChangeRecord(**rec("x-2026-10-01-md", vendor="X_Co", summary="Use [this](http://evil) <b>*now*</b> a ~~b~~ & c", **REVIEWED))
+    md = site.readme_summary([r], date(2026, 9, 1), "https://feed.example.com")
+    assert "X\\_Co" in md and "a \\~\\~b\\~\\~ \\& c" in md
+    assert "\\[this\\](http://evil) \\<b\\>\\*now\\*\\</b\\>" in md
+
+
+CHECKOUT = "https://buy.stripe.com/test_abc123"
+
+
+def test_pro_pages_say_email_until_checkout_and_app_are_both_set(tmp_path):
+    records = fixture(tmp_path)
+    for kw in ({}, {"pro_checkout_url": CHECKOUT}, {"pro_app_slug": "apiwatch-pro"},
+               {"pro_checkout_url": "https://evil.example/pay", "pro_app_slug": "apiwatch-pro"}):
+        build(tmp_path, records, **kw)
+        pro = (tmp_path / "site" / "pro" / "index.html").read_text()
+        assert "early access" in pro and "mailto:hello@reignventures.co" in pro, kw
+        assert "buy.stripe.com" not in pro and "evil.example" not in pro and "installations/new" not in pro, kw
+
+
+def test_pro_pages_link_checkout_and_install_when_set(tmp_path):
+    build(tmp_path, pro_checkout_url=CHECKOUT, pro_app_slug="apiwatch-pro")
+    out = tmp_path / "site" / "pro"
+    pro = (out / "index.html").read_text()
+    install = "https://github.com/apps/apiwatch-pro/installations/new"
+    assert f'href="{CHECKOUT}"' in pro and f'href="{install}"' in pro and "early access" not in pro
+    assert "$19 per month" in pro and "<script" not in pro and " style=" not in pro
+    assert "(3 today)" in pro                       # the fixture's published breaking records
+    welcome, installed = (out / "welcome.html").read_text(), (out / "installed.html").read_text()
+    assert f'href="{install}"' in welcome and f'href="{CHECKOUT}"' in installed
+    for page in (welcome, installed):
+        assert '<meta name="robots" content="noindex">' in page
+    assert '<meta name="robots"' not in pro
+    assert "—" not in pro + welcome + installed and "–" not in pro + welcome + installed
+
+
+def test_ci_block_links_the_pro_page(tmp_path):
+    build(tmp_path)
+    assert '<a href="/pro/">How Pro works</a>' in (tmp_path / "site" / "index.html").read_text()
+
+
+def test_cli_passes_pro_settings(tmp_path):
+    out = tmp_path / "s"
+    assert main(["site", "--records", str(fixture(tmp_path)), "--out", str(out),
+                 "--pro-checkout-url", CHECKOUT, "--pro-app-slug", "apiwatch-pro"]) == 0
+    assert CHECKOUT in (out / "pro" / "index.html").read_text()

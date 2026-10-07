@@ -3,6 +3,8 @@
 # gpt-4-1106-preview removed 2026-09-24: the source also lists it here, but says it was shut down March 26, 2026; it lives in openai-2026-03-26-legacy-gpt-model-snapshots-march-2026-shutdown.
 # 2026-09-24 rehearsal: the o4-mini system-card PDF name isn't a model id (openai-agents-python examples).
 # 2026-09-24: excludes ids the 2025 records date earlier (Jun 6, Jul 28, Oct 27).
+# 2026-10-06 field-test check against the deprecations page: gpt-3.5-turbo-0301 and gpt-3.5-turbo-0613 were shut down 2024-09-13
+# (2023-06-13 and 2023-11-06 tables), so they're excluded; the scanner no longer reads gpt-4-1106-vision-preview as a gpt-4 snapshot.
 id: openai-2026-10-23-legacy-gpt-snapshots
 vendor: OpenAI
 surface: gpt-3.5-turbo, gpt-4, gpt-4-turbo, gpt-4.1-nano, o1, o1-pro, o3-mini, o4-mini, gpt-image-1 and fine-tunes
@@ -29,6 +31,8 @@ signatures:
 - ft:babbage-002
 - ft:davinci-002
 exclude:
+- gpt-3.5-turbo-0301
+- gpt-3.5-turbo-0613
 - gpt-3.5-turbo-1106
 - gpt-3.5-turbo-instruct
 - gpt-image-1-mini

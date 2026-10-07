@@ -1,4 +1,8 @@
 # Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Removed an editorial line. /v1/videos is confirmed on the Videos API reference.
+# 2026-10-06 field-test scope fix: /v1/videos also matched Brave's video search (api.search.brave.com/res/v1/videos/search) and Kling AI's
+# /v1/videos/text2video, image2video, multi-image2video and motion-control. Files must now mention openai or sora, and those paths are excluded.
+# Known limit: a /v1/videos call through a base-URL variable in a file that never names openai or sora is missed.
+# replicate.video('openai/sora-2') stays a hit: Replicate's openai/sora-2 page carries OpenAI's September 24, 2026 discontinuation notice.
 id: openai-2026-09-24-sora-2-videos-api-shutdown
 vendor: OpenAI
 surface: Videos API and sora-2 / sora-2-pro models
@@ -8,6 +12,8 @@ effective: "2026-09-24"
 summary: OpenAI Videos API and all Sora 2 models shut down September 24, 2026, with no replacement
 detail: Announced March 24, 2026. The Videos API, the aliases sora-2 and sora-2-pro, and snapshots sora-2-2025-10-06, sora-2-2025-12-08, and sora-2-pro-2025-10-06 are removed. OpenAI lists no recommended replacement.
 signatures: ["sora-2", "/v1/videos"]
+context: ["openai", "sora"]
+exclude: ["res/v1/videos", "/v1/videos/text2video", "/v1/videos/image2video", "/v1/videos/multi-image2video", "/v1/videos/motion-control"]
 source_url: "https://developers.openai.com/api/docs/deprecations"
 verified: true
 verified_by: claude

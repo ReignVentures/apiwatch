@@ -24,6 +24,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="output of `check --json`: leave out records whose evidence is gone from their source")
     st.add_argument("--require-check-results", action="store_true",
                     help="fail (exit 2) if --check-results is missing, instead of publishing without it (CI)")
+    st.add_argument("--pro-checkout-url", default="", help="Stripe payment link for apiwatch Pro (buy.stripe.com/...)")
+    st.add_argument("--pro-app-slug", default="", help="the apiwatch Pro GitHub App's slug (for its install link)")
 
     ck = sub.add_parser("check", help="confirm each record's evidence still appears on its vendor source (network)")
     ck.add_argument("--records", default="feed/records", type=Path)
@@ -91,7 +93,8 @@ def main(argv: list[str] | None = None) -> int:
             exclude = check.failed_ids(args.check_results)
             for rid in sorted(exclude):
                 print(f"site: leaving out {rid} (evidence missing from its source)")
-        n, path = site.build(args.records, args.out, base_url=args.base_url, exclude=exclude)
+        n, path = site.build(args.records, args.out, base_url=args.base_url, exclude=exclude,
+                             pro_checkout_url=args.pro_checkout_url, pro_app_slug=args.pro_app_slug)
         print(f"site: {n} records → {path}")
         return 0
 

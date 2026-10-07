@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import re
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from html import escape
 from pathlib import Path
 from xml.sax.saxutils import escape as xesc
@@ -30,6 +30,8 @@ SEV_NOTE = {
 REPO_URL = "https://github.com/ReignVentures/apiwatch"
 MARKETPLACE_URL = "https://github.com/marketplace/actions/apiwatch-scan"
 PRO_EMAIL = "hello@reignventures.co"
+PUBLISHER = {"@type": "Organization", "name": "Reign Ventures", "url": "https://reignventures.co"}
+UPCOMING_DAYS = 180     # the /upcoming page and the README's "What it caught" look this far ahead
 # the next step on every index, vendor and record page: add the free Action, or ask about Pro. Plain HTML, no script
 CTA = f"""<aside class="cta" aria-labelledby="ci">
 <h2 id="ci">Catch this in CI</h2>
@@ -39,8 +41,11 @@ build fails when a breaking or silent change lands on your code.</p>
 - uses: ReignVentures/apiwatch@v1</code></pre>
 <p><a href="{REPO_URL}">Setup and options on GitHub</a> · <a href="{MARKETPLACE_URL}">GitHub Marketplace</a></p>
 <p class="meta">apiwatch Pro watches every repository in your GitHub organization each night, with nothing to add
-to your workflows, and opens an issue when a new change lands on your code. $19 per month. Email <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a> for early access.</p>
+to your workflows, and opens an issue when a new change lands on your code. $19 per month. <a href="/pro/">How Pro works</a>.</p>
 </aside>"""
+PRO_SCAN_TIME = "05:00 UTC"   # when the nightly Pro scan starts
+CHECKOUT = re.compile(r"^https://buy\.stripe\.com/[A-Za-z0-9_/-]+$")
+APP_SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,99}$")
 
 
 def vendor_slug(vendor: str) -> str:
@@ -48,7 +53,9 @@ def vendor_slug(vendor: str) -> str:
 
 
 def build(records_dir: Path, out: Path, today: date | None = None, base_url: str = "",
-          exclude: set[str] = frozenset()) -> tuple[int, Path]:
+          exclude: set[str] = frozenset(), pro_checkout_url: str = "", pro_app_slug: str = "") -> tuple[int, Path]:
+    """pro_checkout_url (a buy.stripe.com payment link) and pro_app_slug (the Pro GitHub App) turn the /pro/ pages
+    from "email us" into subscribe and install links; both or neither, and anything malformed is ignored."""
     today = today or date.today()
     base = base_url.rstrip("/") + "/" if base_url else ""
     recs = [r for r in load_records(records_dir) if r.published and r.id not in exclude]
@@ -67,16 +74,26 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
 
     # canonical URLs are the clean paths Cloudflare Pages serves (it 308-redirects "x.html" to "x"), on base_url
     (out / "index.html").write_text(_canonical(_index(recs, by_vendor, today), base, ""))
+    (out / "upcoming.html").write_text(_canonical(_upcoming_page(recs, today), base, "upcoming"))
+    checkout = pro_checkout_url if CHECKOUT.match(pro_checkout_url or "") else ""
+    install = f"https://github.com/apps/{pro_app_slug}/installations/new" if APP_SLUG.match(pro_app_slug or "") else ""
+    if not (checkout and install):
+        checkout = install = ""
+    (out / "pro").mkdir(exist_ok=True)
+    (out / "pro" / "index.html").write_text(_canonical(_pro_page(sum(r.severity in ("breaking", "silent", "deprecation") for r in recs),
+                                                                  checkout, install), base, "pro/"))
+    (out / "pro" / "welcome.html").write_text(_pro_welcome(install))
+    (out / "pro" / "installed.html").write_text(_pro_installed(checkout))
     ids = id_pages(recs)
     id_links = {sig: slug for slug, (sigs, _) in ids.items() for sig in sigs}
     for r in recs:
-        (out / "records" / f"{r.id}.html").write_text(_canonical(_record_page(r, today, id_links), base, f"records/{r.id}"))
+        (out / "records" / f"{r.id}.html").write_text(_canonical(_record_page(r, today, id_links, base), base, f"records/{r.id}"))
     for vendor, rs in by_vendor.items():
         (out / "vendors" / f"{vendor_slug(vendor)}.html").write_text(_canonical(
             _page(f"{vendor} API deprecations and breaking changes", _vendor_body(vendor, rs, today), depth=1,
                   description=_vendor_description(vendor, rs, today)), base, f"vendors/{vendor_slug(vendor)}"))
     for slug, (sigs, rs) in ids.items():
-        (out / "ids" / f"{slug}.html").write_text(_canonical(_id_page(sigs, rs, today), base, f"ids/{slug}"))
+        (out / "ids" / f"{slug}.html").write_text(_canonical(_id_page(sigs, rs, today, base, slug), base, f"ids/{slug}"))
     # served for any unknown path at any depth, so links are root-absolute. Without it Cloudflare Pages
     # treats the site as a SPA and answers every unknown path with index.html and a 200
     (out / "404.html").write_text(_page("Not found", '<h1>Not found</h1><p>No page here. '
@@ -96,19 +113,33 @@ def _canonical(html: str, base: str, path: str) -> str:
 
 
 def _sitemap(recs, by_vendor, ids, base, today) -> str:
-    urls = [(base, today.isoformat())]
+    urls = [(base, today.isoformat()), (f"{base}upcoming", today.isoformat()), (f"{base}pro/", today.isoformat())]
     urls += [(f"{base}vendors/{vendor_slug(v)}", max(r.verified_on or r.effective for r in rs)) for v, rs in by_vendor.items()]
-    urls += [(f"{base}records/{r.id}", r.verified_on or r.effective) for r in recs]
-    # an id page's wording turns from "stops" to "stopped" once a date passes, so that date counts as a change
-    urls += [(f"{base}ids/{slug}", max(max(r.verified_on or r.effective, r.effective if r.effective <= today.isoformat() else "")
-                                       for r in rs)) for slug, (_, rs) in ids.items()]
+    urls += [(f"{base}records/{r.id}", _id_lastmod([r], today)) for r in recs]
+    urls += [(f"{base}ids/{slug}", _id_lastmod(rs, today)) for slug, (_, rs) in ids.items()]
     body = "".join(f"<url><loc>{xesc(u)}</loc><lastmod>{d}</lastmod></url>" for u, d in urls)
     return f'<?xml version="1.0" encoding="utf-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>\n'
 
 
+def _id_lastmod(rs: list[ChangeRecord], today: date) -> str:
+    # a page's wording turns from "takes effect" or "stops" to "took effect" or "stopped" once a date passes,
+    # so that date counts as a change (record and id pages, sitemap and JSON-LD dateModified alike)
+    return max(max(r.verified_on or r.effective, r.effective if r.effective <= today.isoformat() else "") for r in rs)
+
+
+def _jsonld(data: dict) -> str:
+    """A schema.org JSON-LD data block. Browsers never run a script element whose type isn't JavaScript (HTML
+    "prepare the script element" returns before the CSP inline check), so script-src 'self' stays as is.
+    <, > and & are escaped as \\u003c etc so record text can't close the element."""
+    text = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    text = text.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+    return f'<script type="application/ld+json">{text}</script>\n'
+
+
 # ---------- pages ----------
 
-def _page(title: str, body: str, depth: int = 0, up: str | None = None, description: str = TAGLINE) -> str:
+def _page(title: str, body: str, depth: int = 0, up: str | None = None, description: str = TAGLINE,
+          head: str = "") -> str:
     up = "../" * depth if up is None else up
     return f"""<!doctype html>
 <html lang="en">
@@ -120,10 +151,10 @@ def _page(title: str, body: str, depth: int = 0, up: str | None = None, descript
 <link rel="stylesheet" href="{up}style.css">
 <link rel="alternate" type="application/atom+xml" title="{SITE_TITLE}" href="{up}feed.xml">
 <link rel="alternate" type="application/feed+json" title="{SITE_TITLE}" href="{up}feed.json">
-</head>
+{head}</head>
 <body>
 <header class="site"><a class="brand" href="{up}index.html">{SITE_TITLE}</a>
-<nav><a href="{up}feed.xml">Atom</a><a href="{up}feed.json">JSON</a></nav></header>
+<nav><a href="{up}upcoming.html">Upcoming</a><a href="{up}feed.xml">Atom</a><a href="{up}feed.json">JSON</a></nav></header>
 <main>
 {body}
 </main>
@@ -176,6 +207,7 @@ def _index(recs, by_vendor, today) -> str:
 <h1>API &amp; MCP change feed</h1>
 <p class="lede">{escape(TAGLINE)}</p>
 <p class="meta">{len(recs)} changes · {len(by_vendor)} vendors · updated {_fmt(today.isoformat())}</p>
+<p><a href="upcoming.html">Upcoming retirements and changes in the next {UPCOMING_DAYS} days, by month</a></p>
 </section>
 <div class="filters" role="group" aria-label="Filter by severity">{filters}</div>
 {_split(recs, today, 0)}
@@ -192,7 +224,7 @@ def _vendor_body(vendor, rs, today) -> str:
             + _split(rs, today, 1) + CTA)
 
 
-def _record_page(r: ChangeRecord, today: date, id_links: dict[str, str] | None = None) -> str:
+def _record_page(r: ChangeRecord, today: date, id_links: dict[str, str] | None = None, base: str = "") -> str:
     id_links = id_links or {}
     when = "Takes effect" if r.effective > today.isoformat() else "Took effect"
     if r.human_verified:
@@ -247,7 +279,26 @@ def _record_page(r: ChangeRecord, today: date, id_links: dict[str, str] | None =
 <p>{src}</p>
 </article>
 {CTA}"""
-    return _page(r.summary, body, depth=1, description=_clip(f"{_sentence(r.summary)} {when} {_fmt(r.effective)}. {r.fix_hint}"))
+    description = " ".join(f"{_sentence(r.summary)} {when} {_fmt(r.effective)}. {r.fix_hint}".split())
+    ld = _article_ld(r.summary, description, r.surface, f"{base}records/{r.id}" if base else "", _id_lastmod([r], today),
+                     [r.source_url])   # the full sentence; the meta description is clipped for search results
+    return _page(r.summary, body, depth=1, description=_clip(description), head=_jsonld(ld))
+
+
+def _article_ld(headline: str, description: str, about: str, url: str, modified: str, sources: list[str]) -> dict:
+    """schema.org TechArticle. Every property is defined for TechArticle or a type it inherits from (Article,
+    CreativeWork, Thing). No datePublished: records don't carry a first-published date. dateModified is the
+    date the page last changed, as in the sitemap (the review date, or a passed date that changed an id page)."""
+    links = list(dict.fromkeys(u for u in sources if u.startswith(("https://", "http://"))))
+    ld = {"@context": "https://schema.org", "@type": "TechArticle", "headline": headline, "description": description,
+          "about": {"@type": "Thing", "name": about}, "inLanguage": "en", "publisher": PUBLISHER}
+    if url:
+        ld["url"] = url
+    if modified:
+        ld["dateModified"] = modified
+    if links:
+        ld["isBasedOn"] = links[0] if len(links) == 1 else links
+    return ld
 
 
 # ---------- identifier pages ----------
@@ -303,7 +354,7 @@ def _what_happens(r: ChangeRecord, today: date) -> tuple[str, str]:
     return (f"changes on {when}" if future else f"changed on {when}", "change")
 
 
-def _id_page(sigs: list[str], rs: list[ChangeRecord], today: date) -> str:
+def _id_page(sigs: list[str], rs: list[ChangeRecord], today: date, base: str = "", slug: str = "") -> str:
     sig = sigs[0]
     upcoming = [r for r in rs if r.effective > today.isoformat()]
     lead = upcoming[0] if upcoming else rs[-1]          # the next date to act on, else the most recent one
@@ -325,23 +376,177 @@ def _id_page(sigs: list[str], rs: list[ChangeRecord], today: date) -> str:
 </article>
 {CTA}"""
     title = f"{sig} {noun}: {_fmt(lead.effective)}"
-    return _page(title, body, depth=1, description=_clip(f"{answer} {lead.fix_hint}"))
+    description = " ".join(f"{answer} {lead.fix_hint}".split())
+    ld = _article_ld(title, description, sig, f"{base}ids/{slug or id_slug(sig)}" if base else "",
+                     _id_lastmod(rs, today), [r.source_url for r in rs])
+    return _page(title, body, depth=1, description=_clip(description), head=_jsonld(ld))
+
+
+# ---------- pro ----------
+
+NOINDEX = '<meta name="robots" content="noindex">\n'
+
+
+def _pro_page(n_records: int, checkout: str, install: str) -> str:
+    if checkout:
+        start = f"""<ol>
+<li><a class="button" href="{escape(checkout)}">Subscribe for $19 per month</a>. Stripe checkout asks for the GitHub
+organization (or user) to scan.</li>
+<li><a href="{escape(install)}">Install the apiwatch Pro GitHub App</a> on that organization, on all repositories or the ones you pick.</li>
+<li>The first scan runs that night. Scans run every night from about {PRO_SCAN_TIME}.</li>
+</ol>"""
+    else:
+        start = (f'<p>Pro is in early access. Email <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a> with the GitHub '
+                 "organization you want watched, and we'll set it up.</p>")
+    body = f"""<h1>apiwatch Pro</h1>
+<p class="lede">Every night, apiwatch checks every repository in your GitHub organization against this feed and opens an
+issue when a change lands on your code. Nothing to add to your workflows.</p>
+<h2>What you get</h2>
+<ul>
+<li>A nightly scan of the default branch of each repository the App can see, against every reviewed breaking, silent
+and deprecation record in the feed ({n_records} today).</li>
+<li>One issue in a repository when changes that are new to it land on its code: the vendor change, the exact lines
+(linked to the commit that was scanned), the date, and the fix.</li>
+<li>No repeats. A change is reported once per repository, even after you close its issue.</li>
+</ul>
+<h2>What it can access</h2>
+<p>The apiwatch Pro GitHub App asks for read access to code, write access to issues (to open them), and metadata.
+It never changes code, opens pull requests, or touches settings. Code is read on a temporary build machine for the
+scan and isn't kept. apiwatch keeps only your repository names and ids, which changes it has reported in each (so it never
+repeats one), and a short summary of each night's run; the issues themselves live in your repositories.</p>
+<p>Skipped, and listed for us to follow up: archived, disabled and empty repositories, repositories with issues
+turned off, and very large ones (over 1 GB on GitHub, an archive over 2 GB, or more than 500 MB of code or
+300,000 files once unpacked).</p>
+<h2>Price</h2>
+<p>$19 per month for one GitHub organization. Cancel any time by emailing <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a>.</p>
+<h2>Start</h2>
+{start}
+<p class="meta">Prefer to run it yourself? The free <a href="{REPO_URL}">GitHub Action</a> runs the same check in CI on
+one repository at a time.</p>"""
+    return _page("apiwatch Pro: nightly API change scan for your GitHub organization", body, depth=1,
+                 description="apiwatch Pro checks every repository in your GitHub organization each night against "
+                             "known API, model and MCP changes and opens an issue when one lands on your code. $19 per month.")
+
+
+def _pro_welcome(install: str) -> str:
+    step = (f'<p><a class="button" href="{escape(install)}">Install the apiwatch Pro GitHub App</a></p>\n'
+            "<p>Pick the organization you entered at checkout. You can give it all repositories or only some.</p>"
+            if install else
+            f'<p>Email <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a> and we\'ll send the install link.</p>')
+    body = f"""<h1>Thanks for subscribing</h1>
+<p class="lede">One step left: install the GitHub App on the organization you want watched.</p>
+{step}
+<p>The first scan runs the night after you install (from about {PRO_SCAN_TIME}). You'll get an issue in each
+repository where a change lands, and nothing where none does.</p>
+<p class="meta">Typed the wrong organization at checkout? Email <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a> with the
+right one.</p>"""
+    return _page("Thanks for subscribing to apiwatch Pro", body, depth=1, head=NOINDEX)
+
+
+def _pro_installed(checkout: str) -> str:
+    sub = (f'<p>Not subscribed yet? <a href="{escape(checkout)}">Subscribe for $19 per month</a>; scans start the night '
+           "after. Until then the App reads nothing.</p>" if checkout else
+           f'<p>Not set up yet? Email <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a>; until then the App reads nothing.</p>')
+    body = f"""<h1>apiwatch Pro is installed</h1>
+<p class="lede">If your subscription is active, the first scan runs tonight (from about {PRO_SCAN_TIME}).</p>
+{sub}
+<p class="meta">To remove it, uninstall apiwatch Pro from your organization's settings, under GitHub Apps.
+Uninstalling doesn't cancel billing: to cancel, email <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a>.</p>"""
+    return _page("apiwatch Pro is installed", body, depth=1, head=NOINDEX)
+
+
+# ---------- upcoming ----------
+
+def upcoming(recs: list[ChangeRecord], today: date, days: int = UPCOMING_DAYS) -> list[ChangeRecord]:
+    """Published records dated from today through today + days, soonest first (most severe first on a shared date)."""
+    start, end = today.isoformat(), (today + timedelta(days=days)).isoformat()
+    return sorted((r for r in recs if r.published and start <= r.effective <= end),
+                  key=lambda r: (r.effective, ORDER[r.severity], r.id))
+
+
+def _upcoming_page(recs: list[ChangeRecord], today: date) -> str:
+    rs = upcoming(recs, today)
+    start, end = _fmt(today.isoformat()), _fmt((today + timedelta(days=UPCOMING_DAYS)).isoformat())
+    months: dict[str, list[ChangeRecord]] = defaultdict(list)
+    for r in rs:
+        months[f"{date.fromisoformat(r.effective):%B %Y}"].append(r)
+    if rs:
+        listing = "\n".join(f'<h2>{m}</h2><ul class="recs">' + "".join(_row(r, 0) for r in group) + "</ul>"
+                            for m, group in months.items())
+    else:
+        listing = f"<p>No tracked changes are dated between {start} and {end}.</p>"
+    n = len(rs)
+    body = f"""<p class="crumb"><a href="index.html">All changes</a></p>
+<section class="intro">
+<h1>Upcoming API and model retirements and changes</h1>
+<p class="lede">Every tracked API, model and MCP change dated from {start} through {end}, by month, soonest first.</p>
+<p class="meta">{n} change{"s" if n != 1 else ""} in the next {UPCOMING_DAYS} days · updated {start}.
+For a deprecation, the date is the key date the vendor names; the record says what happens on it.</p>
+</section>
+{listing}
+{CTA}"""
+    if rs:
+        description = (f"{n} tracked change{'s' if n != 1 else ''} dated {start} to {end}{_kind_list(rs, ': ')}. "
+                       "By month, with what to do.")
+    else:
+        description = f"No tracked API, model or MCP changes are dated between {start} and {end}."
+    return _page("Upcoming API and model retirements and changes", body, description=_clip(description))
+
+
+def readme_summary(recs: list[ChangeRecord], today: date, site_url: str, n_next: int = 5,
+                   exclude: set[str] = frozenset()) -> str:
+    """Markdown for the public README's "What it caught" section, from published records only (reviewed, not
+    illustrative, and not excluded by the latest source check, as on the site): counts by vendor and by
+    severity, and the next dated changes from today on."""
+    recs = [r for r in recs if r.published and r.id not in exclude]
+    by_vendor: dict[str, int] = defaultdict(int)
+    by_sev: dict[str, int] = defaultdict(int)
+    for r in recs:
+        by_vendor[r.vendor] += 1
+        by_sev[r.severity] += 1
+    site_url = site_url.rstrip("/")
+    vendors = ", ".join(f"{_md(v)} {c}" for v, c in sorted(by_vendor.items(), key=lambda kv: (-kv[1], kv[0].lower())))
+    sevs = ", ".join(f"{SEV_LABEL[s].lower()} {by_sev[s]}" for s in ORDER if by_sev[s])
+    nxt = sorted((r for r in recs if r.effective >= today.isoformat()), key=lambda r: (r.effective, ORDER[r.severity], r.id))
+    lines = ["## What it caught", "",
+             f"The feed holds {len(recs)} reviewed change{'s' if len(recs) != 1 else ''}, each checked against the "
+             "vendor's own page.", "",
+             f"* **By vendor:** {vendors or 'none yet'}",
+             f"* **By severity:** {sevs or 'none yet'}", "",
+             f"Next dates ([everything in the next {UPCOMING_DAYS} days]({site_url}/upcoming)):", ""]
+    if nxt:
+        lines += [f"* **{_fmt(r.effective)}**, {_md(r.vendor)}, {SEV_LABEL[r.severity].lower()}: "
+                  f"[{_md(r.summary)}]({site_url}/records/{r.id})" for r in nxt[:n_next]]
+    else:
+        lines.append("* No dated changes ahead in the feed right now.")
+    return "\n".join(lines) + "\n"
+
+
+def _md(text: str) -> str:
+    # record text is plain: escape what Markdown would read as markup, links or HTML
+    return re.sub(r"([\\`*_\[\]<>|~&])", r"\\\1", " ".join(text.split()))
 
 
 _KINDS = [("retirement", "model retirement"), ("breaking", "breaking change"), ("silent", "silent change"),
           ("deprecation", "deprecation")]
 
 
-def _vendor_description(vendor: str, rs: list[ChangeRecord], today: date) -> str:
+def _kind_list(rs: list[ChangeRecord], prefix: str = "") -> str:
+    """"model retirements, breaking change and deprecations": the kinds present, prefixed; "" when none are"""
     counts: dict[str, int] = defaultdict(int)
     for r in rs:
         counts["retirement" if (r.severity == "breaking" and r.kind == "model") else r.severity] += 1
     names = [label + ("s" if counts[key] > 1 else "") for key, label in _KINDS if counts[key]]
-    listed = names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1] if names else ""
+    if not names:
+        return ""
+    return prefix + (names[0] if len(names) == 1 else ", ".join(names[:-1]) + " and " + names[-1])
+
+
+def _vendor_description(vendor: str, rs: list[ChangeRecord], today: date) -> str:
     nxt = sorted((r for r in rs if r.effective > today.isoformat()), key=lambda r: r.effective)
     tail = f" Next: {_sentence(nxt[0].summary)}" if nxt else ""
     each = "each with" if len(rs) != 1 else "with"
-    listed = f": {listed}," if listed else ","
+    listed = _kind_list(rs, ": ") + ","
     return _clip(f"{len(rs)} tracked {vendor} change{'s' if len(rs) != 1 else ''}{listed} {each} the date "
                  f"and what to do.{tail}")
 
@@ -481,6 +686,9 @@ h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 .cta { margin: 40px 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
 .cta h2 { margin-top: 0; }
 .cta pre { margin: 12px 0; padding: 10px 12px; overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
+.button { display: inline-block; background: var(--fg); color: var(--bg); border-radius: 8px; padding: 8px 14px;
+  font-weight: 600; }
+.button:hover { text-decoration: none; opacity: 0.9; }
 .cta pre code { border: 0; padding: 0; background: none; overflow-wrap: normal; }
 footer.site { color: var(--muted); font-size: 13px; padding-bottom: 40px; }
 @media (max-width: 560px) {

@@ -1,4 +1,7 @@
 # Independent review (docs/REVIEW.md) on 2026-09-24: fixed. The detail now matches the migration guide, and the fix no longer names an export feature that doesn't exist. pmpt_ is confirmed in the guide's examples.
+# 2026-10-06 field-test scope fix: v1/prompts matched open-webui's own router (prefix='/api/v1/prompts'). An app's /api/v1/prompts route is excluded,
+# Independent review: the exclude alone removes it, so no context requirement (a v1/prompts call through a base-URL variable still matches).
+# OpenAI's own path (api.openai.com/v1/prompts) has no /api/ segment, so it still matches.
 id: openai-2026-11-30-prompts-api-shutdown
 vendor: OpenAI
 surface: v1/prompts API and reusable prompt objects
@@ -8,6 +11,7 @@ effective: "2026-11-30"
 summary: OpenAI reusable prompt objects and the v1/prompts API shut down November 30, 2026
 detail: Announced June 3, 2026, when prompt creation was also de-emphasized in the platform. The v1/prompts API and reusable prompt objects are scheduled to shut down; Responses API requests that pass a saved prompt object (id pmpt_…) should send the prompt through input instead. OpenAI's migration path is to move the prompt content into application code.
 signatures: ["v1/prompts", "pmpt_"]
+exclude: ["/api/v1/prompts"]
 source_url: "https://developers.openai.com/api/docs/deprecations"
 verified: true
 verified_by: claude

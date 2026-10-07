@@ -1,4 +1,7 @@
 # Independent review (docs/REVIEW.md) on 2026-09-24: pass, no changes.
+# 2026-10-06 field-test scope fix: "notion" alone let update_content match an OAuth scope list (scopes=[..., "update_content"]) in a Notion integration.
+# update_content now needs the MCP tool (notion-update-page or a Notion MCP server name), or Notion plus old_str or the REST markdown endpoint
+# (PATCH /v1/pages/{page_id}/markdown, notion.pages.updateMarkdown), which the changelog also names for the empty old_str check.
 id: notion-2026-08-25-mcp-update-content-atomic
 vendor: Notion MCP
 surface: MCP tool notion-update-page, update_content command
@@ -8,7 +11,8 @@ effective: "2026-08-25"
 summary: notion-update-page update_content batches are now all-or-nothing; calls that used to partly succeed now fail
 detail: Previously, if one old_str in a batch matched nothing, the matching replacements were saved and the call returned success. That could silently drop content moved within a batch. Now the whole batch applies or none of it does. Empty old_str values, which were silently skipped, now fail validation, including on the REST Update page markdown endpoint.
 signatures: ["notion-update-page", "update_content"]
-context: ["notion"]   # generic signatures only count in files that mention notion
+context: ["notion-update-page", "mcp.notion.com", "notion-mcp", "notion_mcp", "mcp_notion", "mcp__notion",
+          ["notion", "old_str"], ["notion", "updatemarkdown"], ["notion", "update_markdown"], ["notion", "/markdown"]]
 source_url: "https://developers.notion.com/page/changelog"
 verified: true
 verified_by: claude

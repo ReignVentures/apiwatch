@@ -1,7 +1,9 @@
 # Promoted from feed/drafts (written by an author agent from a changelog lead (apiwatch watch)) after independent review (docs/REVIEW.md) on 2026-10-02: fix. Facts check out against the Compliance Activity Feed docs and the Sep 24 release note. Excluded .title( (str.title(), plt.title()); past tense; the fix names every metadata endpoint.
 # Lead: GitHub issue #2 (release notes, September 24, 2026). No request fails: the fields come back null, empty or missing, so this is silent.
-# filename/title are generic field names, so hits count only in files that mention both "compliance" and "activit" (activity/activities).
-# Known limit: a handler in a file that names neither word (e.g. a generic event mapper fed by a separate client module) is missed.
+# filename/title are generic field names, so hits count only in files that name the Activity Feed endpoint (see the 2026-10-06 note).
+# 2026-10-06 field-test scope fix: "compliance" + "activit" matched recorded HTTP cassettes and a test corpus that only talk about compliance; none called the API.
+# The file must now name the endpoint (compliance/activities, or v1/compliance plus activit). Config files count: a log shipper (Vector, Benthos) pulling the feed maps filename/title in YAML or TOML.
+# Known limit: a handler in a file that doesn't name the endpoint (e.g. a generic event mapper fed by a separate client module) is missed.
 id: anthropic-2026-09-24-compliance-activity-names-removed
 vendor: Anthropic
 surface: Compliance API GET /v1/compliance/activities — filename and title on file, project document and artifact activities
@@ -14,7 +16,8 @@ signatures:
 - filename
 - title
 context:
-- - compliance
+- - compliance/activities
+- - v1/compliance
   - activit
 exclude:
 - .title(

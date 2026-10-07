@@ -3,6 +3,9 @@
 # expose no parameter to choose lexical search, so there is no per-call opt-out; GHES hosts stay lexical.
 # 2026-09-24 attribution review: dropped __search_issues (the matcher now handles mcp__server__tool names) and excluded Ruby Octokit calls and user-defined helpers.
 # 2026-09-24 notebook review: context now needs github AND mcp in the file: a local search_issues function or PyGithub's get_workflow_run in a GitHub REST file isn't the MCP tool.
+# 2026-10-06 field-test scope fix: github AND mcp still matched Sentry's search_issues in a multi-server MCP tool list (AutoGPT eval data).
+# The file must now name the GitHub MCP server itself: github-mcp(-server), github_mcp, mcp_github, mcp-github, mcp__github (Claude Code tool names), githubmcp (githubMcp, GitHubMCPServer), api.githubcopilot.com/mcp or the GHEC data-residency ghe.com/mcp.
+# Known limit: context is per file, so another server's section in a file that also lists the GitHub server still matches (AutoGPT mcp_effects.json, mcp_sentry).
 id: github-2026-08-10-mcp-search-issues-semantic
 vendor: GitHub MCP Server
 surface: MCP tool search_issues — semantic search by default on github.com and GHEC
@@ -14,8 +17,14 @@ detail: 'From v1.9.0, search_issues sends search_type=semantic on dotcom and GHE
 signatures:
 - search_issues
 context:
-- - github
-  - mcp
+- github-mcp
+- github_mcp
+- mcp_github
+- mcp-github
+- mcp__github
+- githubcopilot.com/mcp
+- ghe.com/mcp
+- githubmcp
 exclude:
 - .search_issues(
 - '.search_issues '

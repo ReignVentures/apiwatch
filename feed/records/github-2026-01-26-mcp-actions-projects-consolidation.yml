@@ -1,6 +1,9 @@
 # Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Added get_workflow (the 25th old name, per the alias map) and matched the alias wording to the renaming guide.
 # Removal of the old implementations: v0.31.0 (2026-02-19), PR github/github-mcp-server#1958. Aliases: docs/tool-renaming.md, pkg/github/deprecated_tool_aliases.go.
 # 2026-09-24 notebook review: context now needs github AND mcp in the file: a local search_issues function or PyGithub's get_workflow_run in a GitHub REST file isn't the MCP tool.
+# 2026-10-06 field-test scope fix: github AND mcp still matched Linear's get_project/list_projects in a multi-server MCP tool list (AutoGPT eval data).
+# The file must now name the GitHub MCP server itself: github-mcp(-server), github_mcp, mcp_github, mcp-github, mcp__github (Claude Code tool names), githubmcp (githubMcp, GitHubMCPServer), api.githubcopilot.com/mcp or the GHEC data-residency ghe.com/mcp.
+# Known limit: context is per file, so another server's section in a file that also lists the GitHub server still matches.
 id: github-2026-01-26-mcp-actions-projects-consolidation
 vendor: GitHub MCP Server
 surface: Actions and Projects toolsets — 25 tools folded into actions_list / actions_get / actions_run_trigger / projects_list / projects_get / projects_write
@@ -36,8 +39,14 @@ signatures:
 - update_project_item
 - delete_project_item
 context:
-- - github
-  - mcp
+- github-mcp
+- github_mcp
+- mcp_github
+- mcp-github
+- mcp__github
+- githubcopilot.com/mcp
+- ghe.com/mcp
+- githubmcp
 source_url: https://github.com/github/github-mcp-server/releases/tag/v0.30.0
 verified: true
 verified_by: claude

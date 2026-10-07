@@ -113,7 +113,8 @@ class CallSite:
     def in_test(self) -> bool:
         parts = self.file.replace("\\", "/").lower().split("/")
         name = parts[-1]
-        return (any(p in {"test", "tests", "__tests__", "spec", "specs", "testdata", "fixtures"} for p in parts[:-1])
+        return (any(p in {"test", "tests", "__tests__", "spec", "specs", "testdata", "fixtures",
+                                               "__fixtures__", "__mocks__", "__snapshots__", "cassettes"} for p in parts[:-1])
                 or name.startswith("test_") or name.endswith(("_test.py", "_test.go", ".test.ts", ".test.js",
                                                                ".spec.ts", ".spec.js", ".test.tsx", ".spec.tsx")))
 
