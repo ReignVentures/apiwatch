@@ -1,0 +1,27 @@
+# Draft authored 2026-10-08 from lead issue #9 (changelog watcher), from Google's primary sources only, fetched with curl:
+#   https://ai.google.dev/gemini-api/docs/changelog.md.txt (October 6, 2026 entry)
+#   https://ai.google.dev/gemini-api/docs/deprecations.md.txt (Nano Banana models table)
+#   https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-image.md.txt and models/gemini-nano-banana-2.1.md.txt
+# No alias: the model page lists only "Stable: gemini-3.1-flash-image".
+# 2026-10-08 independent review (docs/REVIEW.md) by a separate agent: pass, no changes. apiwatch check ok.
+id: google-2026-10-06-gemini-3-1-flash-image
+vendor: Google
+surface: Gemini API model gemini-3.1-flash-image
+kind: model
+severity: deprecation
+effective: '2026-10-06'
+summary: Google deprecated the Gemini API image model gemini-3.1-flash-image (Nano Banana 2) on October 6, 2026, with no shutdown date announced, and tells callers to migrate to gemini-nano-banana-2.1.
+detail: The October 6, 2026 Gemini API release notes say the gemini-3.1-flash-image model is deprecated (no shutdown date announced) and to migrate to gemini-nano-banana-2.1, which went GA the same day as an update to Nano Banana 2. The deprecations page lists gemini-3.1-flash-image (released May 28, 2026) with "No shutdown date announced" and gemini-nano-banana-2.1 as the recommended replacement. Calls still work for now; Google says shutdown dates on that page are the earliest possible and that it will give advance notice. This record covers only the GA id, not gemini-3.1-flash-image-preview (shut down June 25, 2026, separate record) or gemini-3.1-flash-lite-image.
+signatures:
+- gemini-3.1-flash-image
+exclude: [gemini-3.1-flash-image-preview]   # shut down June 25, 2026 (google-2026-06-25-gemini-3-1-flash-image-preview)
+source_url: https://ai.google.dev/gemini-api/docs/changelog
+verified: true
+verified_by: claude
+verified_on: '2026-10-08'
+evidence:
+- October 6, 2026
+- The gemini-3.1-flash-image model is deprecated
+- no shutdown date announced
+- Migrate to gemini-nano-banana-2.1
+fix_hint: Move gemini-3.1-flash-image calls to gemini-nano-banana-2.1, which the deprecations page lists as the replacement with no shutdown date announced, then re-check image output on your evals.
