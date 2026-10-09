@@ -5,6 +5,8 @@
 # 2026-09-24: excludes ids the 2025 records date earlier (Jun 6, Jul 28, Oct 27).
 # 2026-10-06 field-test check against the deprecations page: gpt-3.5-turbo-0301 and gpt-3.5-turbo-0613 were shut down 2024-09-13
 # (2023-06-13 and 2023-11-06 tables), so they're excluded; the scanner no longer reads gpt-4-1106-vision-preview as a gpt-4 snapshot.
+# 2026-10-08: the deprecations page now names gpt-image-2.5-sunburst or gpt-image-2.5-flare (not gpt-image-2) as the gpt-image-1 substitute; detail updated. Other rows unchanged.
+# 2026-10-08 independent review (docs/REVIEW.md): pass. The gpt-image-1 row (October 23, 2026) lists gpt-image-2.5-sunburst or gpt-image-2.5-flare; all other covered ids, dates and substitutes match the table.
 id: openai-2026-10-23-legacy-gpt-snapshots
 vendor: OpenAI
 surface: gpt-3.5-turbo, gpt-4, gpt-4-turbo, gpt-4.1-nano, o1, o1-pro, o3-mini, o4-mini, gpt-image-1 and fine-tunes
@@ -12,7 +14,7 @@ kind: model
 severity: breaking
 effective: '2026-10-23'
 summary: Old GPT-3.5/4/o-series snapshots shut down October 23, 2026, including the bare aliases gpt-4, gpt-3.5-turbo, o1, o3-mini, o4-mini
-detail: Announced April 22, 2026. Includes the unversioned aliases, so code that never pinned a snapshot still breaks. Covered — gpt-3.5-turbo(-0125), gpt-4(-0613), gpt-4-turbo(-2024-04-09), gpt-4.1-nano(-2025-04-14), gpt-4o-2024-05-13, gpt-image-1, o1(-2024-12-17), o1-pro(-2025-03-19), o3-mini(-2025-01-31), o4-mini(-2025-04-16), plus -completions variants, ft-o4-mini-2025-04-16, and the fine-tuned models ft-gpt-3.5-turbo, ft-gpt-4, ft-gpt-4.1-nano-2025-04-14, ft-babbage-002 and ft-davinci-002. Substitutes are gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, and gpt-image-2.
+detail: Announced April 22, 2026. Includes the unversioned aliases, so code that never pinned a snapshot still breaks. Covered — gpt-3.5-turbo(-0125), gpt-4(-0613), gpt-4-turbo(-2024-04-09), gpt-4.1-nano(-2025-04-14), gpt-4o-2024-05-13, gpt-image-1, o1(-2024-12-17), o1-pro(-2025-03-19), o3-mini(-2025-01-31), o4-mini(-2025-04-16), plus -completions variants, ft-o4-mini-2025-04-16, and the fine-tuned models ft-gpt-3.5-turbo, ft-gpt-4, ft-gpt-4.1-nano-2025-04-14, ft-babbage-002 and ft-davinci-002. Substitutes are gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, and, for gpt-image-1, gpt-image-2.5-sunburst or gpt-image-2.5-flare.
 signatures:
 - gpt-4
 - o1
@@ -48,7 +50,7 @@ exclude:
 source_url: https://developers.openai.com/api/docs/deprecations
 verified: true
 verified_by: claude
-verified_on: '2026-09-24'
+verified_on: '2026-10-08'
 evidence:
 - October 23, 2026
 - gpt-4-0613-completions

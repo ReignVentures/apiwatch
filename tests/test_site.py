@@ -170,7 +170,7 @@ def test_every_page_has_the_ci_next_step(tmp_path):
     out = tmp_path / "site"
     pages = [out / "index.html", out / "vendors" / "acme.html", out / "records" / "acme-2026-10-01-soon.html"]
     for page in out.rglob("*.html"):
-        if page.name != "404.html" and page.parent.name != "pro":     # the Pro pages are the next step
+        if page.name not in ("404.html", "terms.html", "privacy.html") and page.parent.name != "pro":   # legal, Pro: no CTA
             assert page.read_text().count('<aside class="cta"') == 1, page
     for page in pages:
         html = page.read_text()
@@ -459,3 +459,17 @@ def test_cli_passes_pro_settings(tmp_path):
     assert main(["site", "--records", str(fixture(tmp_path)), "--out", str(out),
                  "--pro-checkout-url", CHECKOUT, "--pro-app-slug", "apiwatch-pro"]) == 0
     assert CHECKOUT in (out / "pro" / "index.html").read_text()
+
+
+def test_terms_and_privacy_pages_are_linked_everywhere(tmp_path):
+    build(tmp_path, pro_checkout_url=CHECKOUT, pro_app_slug="apiwatch-pro")
+    out = tmp_path / "site"
+    for name, heading in (("terms.html", "Terms of Service"), ("privacy.html", "Privacy Policy")):
+        html = (out / name).read_text()
+        assert f"<h1>{heading}</h1>" in html and "Reign Ventures LLC" in html and "<script" not in html
+        assert "—" not in html and "–" not in html
+    for page in out.rglob("*.html"):
+        html = page.read_text()
+        assert 'terms.html">Terms</a>' in html and 'privacy.html">Privacy</a>' in html, page
+    pro = (out / "pro" / "index.html").read_text()
+    assert 'href="../terms.html"' in pro and 'href="../privacy.html"' in pro

@@ -14,6 +14,7 @@ from html import escape
 from pathlib import Path
 from xml.sax.saxutils import escape as xesc
 
+from . import legal
 from .feed import ORDER
 from .models import ChangeRecord, load_records
 
@@ -84,6 +85,10 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
                                                                   checkout, install), base, "pro/"))
     (out / "pro" / "welcome.html").write_text(_pro_welcome(install))
     (out / "pro" / "installed.html").write_text(_pro_installed(checkout))
+    (out / "terms.html").write_text(_canonical(_page("Terms of Service", legal.TERMS,
+                                                     description="Terms of Service for apiwatch and apiwatch Pro."), base, "terms"))
+    (out / "privacy.html").write_text(_canonical(_page("Privacy Policy", legal.PRIVACY,
+                                                       description="How apiwatch and apiwatch Pro handle information."), base, "privacy"))
     ids = id_pages(recs)
     id_links = {sig: slug for slug, (sigs, _) in ids.items() for sig in sigs}
     for r in recs:
@@ -160,7 +165,9 @@ def _page(title: str, body: str, depth: int = 0, up: str | None = None, descript
 </main>
 <footer class="site"><p>Records summarize vendor changes in our own words and link the vendor's primary source.
 Each one is reviewed against that source before it's published, and its key facts are re-checked against the source daily;
-a record whose source no longer supports it comes off the site. Reviews are AI-assisted: confirm details that matter before acting.</p></footer>
+a record whose source no longer supports it comes off the site. Reviews are AI-assisted: confirm details that matter before acting.</p>
+<p class="links"><a href="{up}pro/">apiwatch Pro</a> · <a href="{up}terms.html">Terms</a> · <a href="{up}privacy.html">Privacy</a> ·
+<a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a> · © Reign Ventures LLC</p></footer>
 </body>
 </html>
 """
@@ -412,13 +419,15 @@ and deprecation record in the feed ({n_records} today).</li>
 <h2>What it can access</h2>
 <p>The apiwatch Pro GitHub App asks for read access to code, write access to issues (to open them), and metadata.
 It never changes code, opens pull requests, or touches settings. Code is read on a temporary build machine for the
-scan and isn't kept. apiwatch keeps only your repository names and ids, which changes it has reported in each (so it never
-repeats one), and a short summary of each night's run; the issues themselves live in your repositories.</p>
+scan and isn't kept. apiwatch keeps your GitHub account and repository names and ids, which changes it has reported in each
+(so it never repeats one), and a short summary of each night's run; the issues themselves live in your repositories.</p>
 <p>Skipped, and listed for us to follow up: archived, disabled and empty repositories, repositories with issues
 turned off, and very large ones (over 1 GB on GitHub, an archive over 2 GB, or more than 500 MB of code or
 300,000 files once unpacked).</p>
 <h2>Price</h2>
-<p>$19 per month for one GitHub organization. Cancel any time by emailing <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a>.</p>
+<p>$19 per month for one GitHub organization or user account. Cancel any time from your Link account at link.com,
+or by emailing <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a>.
+See the <a href="../terms.html">Terms of Service</a> and <a href="../privacy.html">Privacy Policy</a>.</p>
 <h2>Start</h2>
 {start}
 <p class="meta">Prefer to run it yourself? The free <a href="{REPO_URL}">GitHub Action</a> runs the same check in CI on
@@ -451,7 +460,8 @@ def _pro_installed(checkout: str) -> str:
 <p class="lede">If your subscription is active, the first scan runs tonight (from about {PRO_SCAN_TIME}).</p>
 {sub}
 <p class="meta">To remove it, uninstall apiwatch Pro from your organization's settings, under GitHub Apps.
-Uninstalling doesn't cancel billing: to cancel, email <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a>.</p>"""
+Uninstalling doesn't cancel billing: to cancel, use your Link account at link.com or email
+<a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a>.</p>"""
     return _page("apiwatch Pro is installed", body, depth=1, head=NOINDEX)
 
 
@@ -691,6 +701,10 @@ h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 .button:hover { text-decoration: none; opacity: 0.9; }
 .cta pre code { border: 0; padding: 0; background: none; overflow-wrap: normal; }
 footer.site { color: var(--muted); font-size: 13px; padding-bottom: 40px; }
+footer.site .links a { color: var(--muted); text-decoration: underline; }
+.legal { max-width: 70ch; }
+.legal h2 { text-transform: none; letter-spacing: 0; font-size: 18px; color: var(--fg); margin-top: 28px; }
+.legal li { margin: 6px 0; }
 @media (max-width: 560px) {
   .rec { grid-template-columns: 1fr; gap: 2px; }
   h1 { font-size: 24px; }

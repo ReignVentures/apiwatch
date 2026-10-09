@@ -1,3 +1,4 @@
+# Independent review (docs/REVIEW.md) on 2026-10-09: pass. Corrected from the primary source: fix_hint no longer routes content search to notion-ai-search (the October 7, 2026 entry says to call notion-search).
 # Independent review (docs/REVIEW.md) on 2026-09-24: fixed. The summary and detail now say the Sep 10 follow-up partly reversed the split for connections that can use AI search.
 id: notion-2026-09-02-mcp-search-split
 vendor: Notion MCP
@@ -11,11 +12,11 @@ signatures: ["notion-search", "content_search_mode"]
 source_url: "https://developers.notion.com/page/changelog"
 verified: true
 verified_by: claude
-verified_on: "2026-09-24"
+verified_on: "2026-10-09"
 evidence:
   - "Notion MCP splits keyword search and AI search"
   - "no longer searches connected apps like Slack, Google Drive, and Jira"
   - "The parameter is no longer advertised"
   - "Content searches sent to notion-search now run AI search"
   - "September 2, 2026"
-fix_hint: Call notion-fetch with id self and read current_tool_access.ai_search.status (or call notion-get-tool-access); route content search to notion-ai-search when available; add an eval that expects a cross-source result.
+fix_hint: Since Oct 7, call notion-search for content search; it runs AI search when the user has it, and notion-ai-search is no longer listed in tools/list. On workspace-owned connections, use the search tool the connection lists. When ai_search is available, add an eval that expects a cross-source result.

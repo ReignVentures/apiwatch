@@ -13,6 +13,8 @@ SAME_SURFACE = {
     ("atlassian-2027-03-01-mcp-v1-switches-to-v2-tools", "atlassian-2026-05-27-mcp-oauth-server-change"),
     ("notion-2026-09-02-mcp-search-split", "notion-2026-09-17-mcp-search-drops-unavailable-options"),
     ("notion-2026-09-17-mcp-search-drops-unavailable-options", "notion-2026-09-02-mcp-search-split"),
+    ("notion-2026-10-07-mcp-ai-search-unlisted", "notion-2026-09-17-mcp-search-drops-unavailable-options"),
+    ("notion-2026-09-17-mcp-search-drops-unavailable-options", "notion-2026-10-07-mcp-ai-search-unlisted"),
     ("notion-2026-09-29-mcp-query-database-view-removed", "notion-2026-08-13-mcp-query-database-view-dropped"),
     ("notion-2026-08-13-mcp-query-database-view-dropped", "notion-2026-09-29-mcp-query-database-view-removed"),
     ("stripe-2026-09-30-payment-method-types-removed", "stripe-2026-08-26-intents-payment-method-types-removed"),

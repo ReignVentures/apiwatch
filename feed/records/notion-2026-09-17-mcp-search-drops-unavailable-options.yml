@@ -1,3 +1,4 @@
+# Independent review (docs/REVIEW.md) on 2026-10-09: pass. Corrected from the primary source: fix_hint updated for the October 7, 2026 entry (notion-get-tool-access is optional; ChatGPT search results no longer include notices).
 # Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Two phrases the source doesn't support were removed.
 id: notion-2026-09-17-mcp-search-drops-unavailable-options
 vendor: Notion MCP
@@ -11,11 +12,11 @@ signatures: ["notion-search", "notion-ai-search"]
 source_url: "https://developers.notion.com/page/changelog"
 verified: true
 verified_by: claude
-verified_on: "2026-09-24"
+verified_on: "2026-10-09"
 evidence:
   - "Search drops unavailable options instead of failing"
   - "These calls previously returned a validation_error"
   - "adds a notices array naming the dropped fields"
   - "runs a keyword search in Notion only"
   - "September 17, 2026"
-fix_hint: Read the notices array on every search response and treat a dropped filter as a failure; check restricted_parameters from notion-get-tool-access before sending filters.
+fix_hint: Read the notices array on search responses and treat a dropped filter as a failure. ChatGPT search results no longer include notices, so there (or whenever you want limits up front) check restricted_parameters from notion-get-tool-access before sending filters; calling it first is optional since Oct 7.
