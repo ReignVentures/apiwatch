@@ -141,7 +141,7 @@ def test_404_page_uses_root_absolute_links(tmp_path):
     build(tmp_path)
     html = (tmp_path / "site" / "404.html").read_text()
     assert 'href="/style.css"' in html and 'href="/index.html"' in html and "../" not in html
-    assert 'href="/upcoming.html"' in html
+    assert 'href="/upcoming.html"' in html and 'href="/ids/index.html"' in html
 
 
 def test_canonical_urls_sitemap_and_robots(tmp_path):
@@ -153,8 +153,8 @@ def test_canonical_urls_sitemap_and_robots(tmp_path):
     ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     locs = [e.text for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url/s:loc", ns)]
     assert "https://feed.example.com/records/acme-2026-10-01-soon" in locs and "https://feed.example.com/vendors/beta-mcp" in locs
-    assert not any("draft" in u or "demo" in u for u in locs) and len(locs) == 1 + 1 + 1 + 2 + 3   # index, upcoming, pro
-    assert "https://feed.example.com/upcoming" in locs
+    assert not any("draft" in u or "demo" in u for u in locs) and len(locs) == 1 + 1 + 1 + 1 + 2 + 3   # index, upcoming, pro, ids
+    assert "https://feed.example.com/upcoming" in locs and "https://feed.example.com/ids/" in locs
     assert "Sitemap: https://feed.example.com/sitemap.xml" in (out / "robots.txt").read_text()
 
 
@@ -221,7 +221,7 @@ def id_fixture(tmp_path) -> Path:
 def test_identifier_pages(tmp_path):
     build(tmp_path, records=id_fixture(tmp_path), base_url="https://feed.example.com")
     out = tmp_path / "site"
-    slugs = {p.stem for p in (out / "ids").glob("*.html")}
+    slugs = {p.stem for p in (out / "ids").glob("*.html")} - {"index"}    # ids/index.html is the id index
     # no pages for code fragments or scoped records; spellings that slug the same share one page; "index" is reserved
     # (model ids only: the non-model /v2/search change keeps to its record page)
     assert slugs == {"acme-pro-2-0", "acme-lite", "acme-shared", "beta-fast-1", "index-id", "beta-model-5", "gamma-old-1"}
@@ -251,7 +251,7 @@ def test_identifier_pages(tmp_path):
     record = (out / "records" / "acme-2026-12-01-model.html").read_text()
     assert '<a href="../ids/acme-pro-2-0.html"><code>acme-pro-2.0</code></a>' in record
     assert "<code>output_format={</code>" in record and "ids/output" not in record
-    assert "ids/" not in (out / "records" / "acme-2026-09-30-sdk.html").read_text().split('<aside class="cta"')[0]
+    assert "ids/" not in (out / "records" / "acme-2026-09-30-sdk.html").read_text().split("<main>")[1].split('<aside class="cta"')[0]
     ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     urls = {e.findtext("s:loc", namespaces=ns): e.findtext("s:lastmod", namespaces=ns)
             for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url", ns)}
@@ -259,6 +259,70 @@ def test_identifier_pages(tmp_path):
     # a page whose date has passed counts that date as a change (its wording flipped to the past tense)
     assert urls["https://feed.example.com/ids/acme-lite"] == "2026-09-24"
     assert urls["https://feed.example.com/ids/gamma-old-1"] == "2026-09-10"   # passed date is later than the review
+
+
+def test_id_index(tmp_path):
+    build(tmp_path, records=id_fixture(tmp_path), base_url="https://feed.example.com")
+    out = tmp_path / "site"
+    page = (out / "ids" / "index.html").read_text()
+    assert '<link rel="canonical" href="https://feed.example.com/ids/">' in page
+    assert "<title>Model retirement and change dates by model id · apiwatch</title>" in page
+    assert page.count('<aside class="cta"') == 1 and "application/ld+json" not in page
+    # every id page is listed once, under the vendor of the record it leads with, with that page's noun and date
+    links = re.findall(r'<li><a href="([a-z0-9_-]+)\.html">', page)
+    assert sorted(links) == sorted(p.stem for p in (out / "ids").glob("*.html") if p.stem != "index")
+    assert len(links) == len(set(links)) == 7
+    assert ('<li><a href="acme-lite.html"><code>acme-lite</code></a> <span class="meta">retirement: '
+            '<time datetime="2026-06-01">Jun 1, 2026</time></span></li>') in page
+    assert '<code>acme-shared</code></a> <span class="meta">retirement: <time datetime="2026-12-01">' in page   # the upcoming date
+    assert '<code>beta-fast-1</code></a> <span class="meta">behavior change: <time datetime="2026-10-15">' in page
+    assert '<code>beta-model-5</code></a> <span class="meta">deprecation: <time datetime="2027-04-01">' in page
+    # vendors alphabetical, ids alphabetical inside each (Index, slugged index-id, is a Beta id)
+    acme, beta, gamma = (page.index(f'<h2><a href="../vendors/{v}.html">') for v in ("acme", "beta", "gamma"))
+    assert acme < beta < gamma
+    acme_ids = re.findall(r'<code>([^<]+)</code></a>', page[acme:beta])
+    assert acme_ids == ["acme-lite", "acme-pro-2.0", "acme-shared"]
+    assert re.findall(r'<code>([^<]+)</code></a>', page[beta:gamma]) == ["beta-fast-1", "beta-model-5", "Index"]
+    assert 'href="index-id.html"' in page
+    assert '<p class="meta">7 model ids · 3 vendors.' in page
+    assert 'content="7 AI model ids from Acme, Beta, Gamma, each with' in page
+    assert "—" not in page and "–" not in page
+    # linked from the index body and the nav on every page; in the sitemap with the latest id page change
+    index = (out / "index.html").read_text()
+    assert 'href="ids/index.html"' in index.split("<main>")[1] and '<a href="ids/index.html">Model ids</a>' in index
+    assert 'href="../ids/index.html">Model ids</a>' in (out / "records" / "acme-2026-12-01-model.html").read_text()
+    ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    urls = {e.findtext("s:loc", namespaces=ns): e.findtext("s:lastmod", namespaces=ns)
+            for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url", ns)}
+    assert urls["https://feed.example.com/ids/"] == "2026-09-24"
+
+
+def test_id_index_groups_by_the_record_an_id_page_leads_with(tmp_path):
+    d = tmp_path / "x"
+    d.mkdir()
+    rows = [rec("acme-2026-01-01-a", summary="a", effective="2026-01-01", kind="model", signatures=["shared-1", "old-1"], **REVIEWED),
+            rec("beta-2026-12-01-b", vendor="Beta", summary="b", effective="2026-12-01", kind="model", signatures=["shared-1"], **REVIEWED),
+            rec("beta-2026-03-01-c", vendor="Beta", summary="c", effective="2026-03-01", kind="model", signatures=["old-1"], **REVIEWED)]
+    for r in rows:
+        (d / f"{r['id']}.yml").write_text(yaml.safe_dump(r))
+    build(tmp_path, records=d)
+    page = (tmp_path / "site" / "ids" / "index.html").read_text()
+    beta = page.split('<h2><a href="../vendors/beta.html">')[1]
+    # shared-1: the upcoming Beta record leads, not the earlier Acme one; old-1: both passed, the most recent leads
+    assert '<code>shared-1</code></a> <span class="meta">retirement: <time datetime="2026-12-01">' in beta
+    assert '<code>old-1</code></a> <span class="meta">retirement: <time datetime="2026-03-01">' in beta
+    assert "vendors/acme.html" not in page
+
+
+def test_id_index_without_model_ids(tmp_path):
+    build(tmp_path, base_url="https://feed.example.com")    # the base fixture has no model records
+    page = (tmp_path / "site" / "ids" / "index.html").read_text()
+    assert "<p>No model id pages yet.</p>" in page and "0 model ids" in page
+    assert 'content="Retirement and change dates by model id, from the apiwatch feed."' in page
+    ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    urls = {e.findtext("s:loc", namespaces=ns): e.findtext("s:lastmod", namespaces=ns)
+            for e in ET.parse(tmp_path / "site" / "sitemap.xml").getroot().findall("s:url", ns)}
+    assert urls["https://feed.example.com/ids/"] == "2026-09-23"
 
 
 def test_page_descriptions(tmp_path):

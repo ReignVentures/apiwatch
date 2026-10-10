@@ -99,6 +99,8 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
                   description=_vendor_description(vendor, rs, today)), base, f"vendors/{vendor_slug(vendor)}"))
     for slug, (sigs, rs) in ids.items():
         (out / "ids" / f"{slug}.html").write_text(_canonical(_id_page(sigs, rs, today, base, slug), base, f"ids/{slug}"))
+    # id_slug never returns "index", so this can't collide with an id page; Cloudflare Pages serves it at /ids/
+    (out / "ids" / "index.html").write_text(_canonical(_id_index(ids, today), base, "ids/"))
     # served for any unknown path at any depth, so links are root-absolute. Without it Cloudflare Pages
     # treats the site as a SPA and answers every unknown path with index.html and a 200
     (out / "404.html").write_text(_page("Not found", '<h1>Not found</h1><p>No page here. '
@@ -119,6 +121,8 @@ def _canonical(html: str, base: str, path: str) -> str:
 
 def _sitemap(recs, by_vendor, ids, base, today) -> str:
     urls = [(base, today.isoformat()), (f"{base}upcoming", today.isoformat()), (f"{base}pro/", today.isoformat())]
+    # the id index changes when an id page is added or its key date passes: the latest id page change
+    urls.append((f"{base}ids/", max((_id_lastmod(rs, today) for _, rs in ids.values()), default=today.isoformat())))
     urls += [(f"{base}vendors/{vendor_slug(v)}", max(r.verified_on or r.effective for r in rs)) for v, rs in by_vendor.items()]
     urls += [(f"{base}records/{r.id}", _id_lastmod([r], today)) for r in recs]
     urls += [(f"{base}ids/{slug}", _id_lastmod(rs, today)) for slug, (_, rs) in ids.items()]
@@ -159,7 +163,7 @@ def _page(title: str, body: str, depth: int = 0, up: str | None = None, descript
 {head}</head>
 <body>
 <header class="site"><a class="brand" href="{up}index.html">{SITE_TITLE}</a>
-<nav><a href="{up}upcoming.html">Upcoming</a><a href="{up}feed.xml">Atom</a><a href="{up}feed.json">JSON</a></nav></header>
+<nav><a href="{up}upcoming.html">Upcoming</a><a href="{up}ids/index.html">Model ids</a><a href="{up}feed.xml">Atom</a><a href="{up}feed.json">JSON</a></nav></header>
 <main>
 {body}
 </main>
@@ -215,6 +219,7 @@ def _index(recs, by_vendor, today) -> str:
 <p class="lede">{escape(TAGLINE)}</p>
 <p class="meta">{len(recs)} changes · {len(by_vendor)} vendors · updated {_fmt(today.isoformat())}</p>
 <p><a href="upcoming.html">Upcoming retirements and changes in the next {UPCOMING_DAYS} days, by month</a></p>
+<p><a href="ids/index.html">Every model id, by vendor, with its key date</a></p>
 </section>
 <div class="filters" role="group" aria-label="Filter by severity">{filters}</div>
 {_split(recs, today, 0)}
@@ -361,10 +366,15 @@ def _what_happens(r: ChangeRecord, today: date) -> tuple[str, str]:
     return (f"changes on {when}" if future else f"changed on {when}", "change")
 
 
+def _lead(rs: list[ChangeRecord], today: date) -> ChangeRecord:
+    """The record an id page leads with: the next date to act on, else the most recent one (rs is sorted by date)."""
+    upcoming = [r for r in rs if r.effective > today.isoformat()]
+    return upcoming[0] if upcoming else rs[-1]
+
+
 def _id_page(sigs: list[str], rs: list[ChangeRecord], today: date, base: str = "", slug: str = "") -> str:
     sig = sigs[0]
-    upcoming = [r for r in rs if r.effective > today.isoformat()]
-    lead = upcoming[0] if upcoming else rs[-1]          # the next date to act on, else the most recent one
+    lead = _lead(rs, today)
     what, noun = _what_happens(lead, today)
     answer = f"{sig} {what}."
     also = ("<p class=\"meta\">Also written as " + ", ".join(f"<code>{escape(x)}</code>" for x in sigs[1:]) + ".</p>"
@@ -387,6 +397,39 @@ def _id_page(sigs: list[str], rs: list[ChangeRecord], today: date, base: str = "
     ld = _article_ld(title, description, sig, f"{base}ids/{slug or id_slug(sig)}" if base else "",
                      _id_lastmod(rs, today), [r.source_url for r in rs])
     return _page(title, body, depth=1, description=_clip(description), head=_jsonld(ld))
+
+
+def _id_index(ids: dict[str, tuple[list[str], list[ChangeRecord]]], today: date) -> str:
+    """/ids/: every id page, grouped by the vendor of the record it leads with, alphabetical, each with the
+    same key date and noun as its own page title."""
+    groups: dict[str, list[tuple[str, str, ChangeRecord]]] = defaultdict(list)
+    for slug, (sigs, rs) in ids.items():
+        lead = _lead(rs, today)
+        groups[lead.vendor].append((sigs[0], slug, lead))
+    sections = []
+    for vendor in sorted(groups, key=str.lower):
+        items = "".join(
+            f'<li><a href="{slug}.html"><code>{escape(sig)}</code></a> '
+            f'<span class="meta">{_what_happens(lead, today)[1]}: <time datetime="{lead.effective}">{_fmt(lead.effective)}</time></span></li>'
+            for sig, slug, lead in sorted(groups[vendor], key=lambda x: (x[0].lower(), x[0])))
+        sections.append(f'<h2><a href="../vendors/{vendor_slug(vendor)}.html">{escape(vendor)}</a></h2>'
+                        f'<ul class="idlist">{items}</ul>')
+    n = len(ids)
+    listing = "\n".join(sections) or "<p>No model id pages yet.</p>"
+    body = f"""<p class="crumb"><a href="../index.html">All changes</a></p>
+<section class="intro">
+<h1>Model retirement and change dates by model id</h1>
+<p class="lede">Every model id with its own page, by vendor, with its key date: the next one to act on, or the most recent
+one when none is ahead. Each id page says what happens on that date and what to do.</p>
+<p class="meta">{n} model id{"s" if n != 1 else ""} · {len(groups)} vendor{"s" if len(groups) != 1 else ""}.
+For a deprecation, the date is the key date the vendor names.</p>
+</section>
+{listing}
+{CTA}"""
+    vendors = sorted(groups, key=str.lower)
+    description = (f"{n} AI model ids from {', '.join(vendors)}, each with its retirement, deprecation or change "
+                   "date and what to do." if n else "Retirement and change dates by model id, from the apiwatch feed.")
+    return _page("Model retirement and change dates by model id", body, depth=1, description=_clip(description))
 
 
 # ---------- pro ----------
@@ -660,7 +703,7 @@ code { font: 0.9em ui-monospace, SFMono-Regular, Menlo, monospace; background: v
 header.site, main, footer.site { max-width: 880px; margin: 0 auto; padding: 0 16px; }
 header.site { display: flex; justify-content: space-between; align-items: center; padding-top: 20px; padding-bottom: 12px; }
 .brand { font-weight: 700; color: var(--fg); letter-spacing: -0.01em; }
-header nav a { margin-left: 16px; color: var(--muted); font-size: 14px; }
+header nav a { margin-left: 16px; color: var(--muted); font-size: 14px; white-space: nowrap; }
 h1 { font-size: 30px; line-height: 1.2; letter-spacing: -0.02em; margin: 16px 0 8px; }
 h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); margin: 36px 0 8px; }
 .record h2 { text-transform: none; letter-spacing: 0; font-size: 18px; color: var(--fg); margin-top: 28px; }
@@ -693,6 +736,8 @@ h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 .idrecs { list-style: none; padding: 0; margin: 16px 0 0; }
 .idrecs li { border-top: 1px solid var(--line); padding: 8px 0; }
 .idrecs p { margin: 4px 0; }
+.idlist { list-style: none; padding: 0; margin: 0; columns: 2 280px; column-gap: 24px; }
+.idlist li { padding: 3px 0; break-inside: avoid; }
 .cta { margin: 40px 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
 .cta h2 { margin-top: 0; }
 .cta pre { margin: 12px 0; padding: 10px 12px; overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
@@ -707,6 +752,8 @@ footer.site .links a { color: var(--muted); text-decoration: underline; }
 .legal li { margin: 6px 0; }
 @media (max-width: 560px) {
   .rec { grid-template-columns: 1fr; gap: 2px; }
+  header.site { flex-wrap: wrap; gap: 4px 16px; }
+  header nav a { margin: 0 12px 0 0; }
   h1 { font-size: 24px; }
 }
 """
