@@ -1,0 +1,25 @@
+# Authored 2026-10-10 from lead #12 using primary sources only: the Gemini API deprecations page (Managed agents table,
+# Markdown twin) and the October 8, 2026 changelog entry. Independent review (docs/REVIEW.md) on 2026-10-10: pass,
+# no corrections. The replacement ids (deep-research-preview-04-2026, deep-research-max-preview-04-2026) do not
+# contain this signature, so no exclude is needed.
+id: google-2026-10-23-deep-research-pro-preview-12-2025
+vendor: Google
+surface: managed agent deep-research-pro-preview-12-2025 (Interactions API, agent parameter)
+kind: model
+severity: breaking
+effective: '2026-10-23'
+summary: Google will shut down the Gemini API Deep Research agent deep-research-pro-preview-12-2025 on October 23, 2026.
+detail: Google's deprecations page lists the managed agent deep-research-pro-preview-12-2025 (released December 11, 2025) with an October 23, 2026 shutdown date and deep-research-preview-04-2026 as the recommended replacement. The October 8, 2026 changelog entry announces the deprecation and says to migrate to deep-research-preview-04-2026 (designed for speed and efficiency) or deep-research-max-preview-04-2026 (maximum comprehensiveness) by updating the agent parameter in interactions.create requests.
+signatures:
+- deep-research-pro-preview-12-2025
+source_url: https://ai.google.dev/gemini-api/docs/deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-10-10'
+evidence:
+- deep-research-pro-preview-12-2025
+- October 23, 2026
+- deep-research-preview-04-2026
+- url: https://ai.google.dev/gemini-api/docs/changelog.md.txt
+  text: update the agent parameter in your interactions.create
+fix_hint: Change the agent parameter in your interactions.create requests from deep-research-pro-preview-12-2025 to deep-research-preview-04-2026 (Google's listed replacement, designed for speed and streaming to a client UI) or deep-research-max-preview-04-2026 (maximum comprehensiveness). Both are preview agents; re-test research outputs after switching.
