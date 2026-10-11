@@ -1,0 +1,31 @@
+# Authored 2026-10-11 from a changelog lead (Gemini API changelog, October 8, 2026) using primary sources only:
+# the Gemini API changelog, deprecations page and "What's new in Gemini 3.7" guide (Markdown twins, .md.txt).
+# Independent review (docs/REVIEW.md) on 2026-10-11: fix. The deprecations evidence was too generic ("No shutdown date
+# announced" is on many rows); it now quotes the gemini-3.7-flash table row. All other fields passed.
+# Severity: silent, not deprecation. Since October 8, 2026 requests to gemini-3.7-flash don't fail; Google
+# automatically routes them to gemini-3.8-flash, so callers already get a different model's behavior and output
+# with no error. No shutdown date is announced (deprecations page: "No shutdown date announced"), so it is not
+# breaking. effective is the announcement date because the routing is described as already in place on that date.
+# No exclude: the deprecations page and changelog list no other gemini-3.7-flash-* id, and the replacement
+# gemini-3.8-flash does not contain this signature.
+id: google-2026-10-08-gemini-3-7-flash-routed
+vendor: Google
+surface: Gemini API model gemini-3.7-flash
+kind: model
+severity: silent
+effective: '2026-10-08'
+summary: Google deprecated gemini-3.7-flash on October 8, 2026 and now automatically routes all requests for it to gemini-3.8-flash.
+detail: The October 8, 2026 Gemini API changelog entry says gemini-3.7-flash is deprecated and has been replaced by gemini-3.8-flash, that all requests to gemini-3.7-flash are automatically routed to gemini-3.8-flash, and tells callers to update the model string. Calls keep succeeding, but they are served by a different model. The deprecations page lists gemini-3.7-flash (released August 13, 2026) with no shutdown date announced and gemini-3.8-flash as the replacement.
+signatures:
+- gemini-3.7-flash
+source_url: https://ai.google.dev/gemini-api/docs/changelog
+verified: true
+verified_by: claude
+verified_on: '2026-10-11'
+evidence:
+- Gemini 3.7 Flash deprecation
+- All requests to gemini-3.7-flash are automatically routed to gemini-3.8-flash
+- October 8, 2026
+- url: https://ai.google.dev/gemini-api/docs/deprecations.md.txt
+  text: 'gemini-3.7-flash | August 13, 2026 | No shutdown date announced'
+fix_hint: Change the model string from gemini-3.7-flash to gemini-3.8-flash, as Google directs, and review the Gemini 3.8 Flash guide. Your requests are already served by gemini-3.8-flash, so re-check output quality, latency and cost on your evals.

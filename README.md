@@ -11,10 +11,10 @@ Vendors retire models, rename MCP tools, and change API behavior on a schedule y
 
 ## What it caught
 
-The feed holds 117 reviewed changes, each checked against the vendor's own page.
+The feed holds 119 reviewed changes, each checked against the vendor's own page.
 
-* **By vendor:** Google 31, OpenAI 26, Stripe 24, Anthropic 14, Notion MCP 6, GitHub MCP Server 4, Atlassian Rovo MCP 3, Twilio 3, xAI 3, Greenhouse 1, MCP specification 1, Notion 1
-* **By severity:** breaking 90, silent 19, deprecation 8
+* **By vendor:** Google 33, OpenAI 26, Stripe 24, Anthropic 14, Notion MCP 6, GitHub MCP Server 4, Atlassian Rovo MCP 3, Twilio 3, xAI 3, Greenhouse 1, MCP specification 1, Notion 1
+* **By severity:** breaking 90, silent 21, deprecation 8
 
 Next dates ([everything in the next 180 days](https://apiwatch.reignventures.co/upcoming)):
 
