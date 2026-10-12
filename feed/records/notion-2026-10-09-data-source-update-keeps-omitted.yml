@@ -1,0 +1,34 @@
+# Authored 2026-10-12 from lead #16 (Notion changelog, October 9, 2026, "Data source schema update fixes"), verified
+# against the primary sources: the Notion changelog (https://developers.notion.com/page/changelog.md), Update data
+# source properties (https://developers.notion.com/reference/update-data-source-properties.md) and Update a data source
+# (https://developers.notion.com/reference/update-a-data-source.md, PATCH /v1/data_sources/{data_source_id}; its
+# TypeScript SDK sample calls notion.dataSources.update).
+# 2026-10-12 independent review (docs/REVIEW.md): fix. Detail no longer claims how callers relied on the old behavior
+# (no source states it); fix_hint wording on replacing an option list corrected to the properties page.
+# Severity: silent. No call starts failing; requests that omit description or options, or send a case-variant option
+# name, now keep existing values instead of changing them. The color fix (was validation_error) is a fix, not a break.
+# Scope: "/v1/data_sources" is already claimed by notion-2026-04-20-query-pagination-cap (queries), so it is not a
+# signature here; raw-HTTP callers of PATCH /v1/data_sources/{id} are not matched (known gap). The Python
+# data_sources.update name was left out: no Notion primary source names it.
+# context needs "properties" beside "notion": only schema (properties) updates are affected, not title/icon/trash-only calls.
+id: notion-2026-10-09-data-source-update-keeps-omitted
+vendor: Notion
+surface: Update a data source (PATCH /v1/data_sources/{data_source_id}, notion.dataSources.update) — property and option schema updates
+kind: rest
+severity: silent
+effective: "2026-10-09"
+summary: Data source property updates now keep omitted description and select/multi_select options, and match option names case-insensitively
+detail: As of October 9, 2026, Update a data source keeps a property's existing description when the request omits it, for every property type and when the type changes; send null to clear it. The same rule applies to an option's own description. Omitting options on a select or multi_select update now keeps the current options. Option names match existing options without regard to case, so sending "high" keeps the existing "High" option and its ID instead of replacing it; the API does not rename existing options. Changing the color of an existing select, multi_select, or status option now works instead of returning validation_error. Requests that omit description or options, or send a case-variant option name, now keep the existing values with no error.
+signatures: ["dataSources.update"]
+context: [["notion", "properties"]]
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-10-12"
+evidence:
+  - "October 9, 2026"
+  - "now keep the existing description when you omit it"
+  - "multi_select update now keeps the current options"
+  - "sending high keeps the existing High option"
+  - {url: "https://developers.notion.com/reference/update-a-data-source.md", text: "notion.dataSources.update"}
+fix_hint: Send description null explicitly to clear a property or option description. To change a select or multi_select option list, send options with the complete list you want to keep; options left out of that list are removed. Don't rely on a differently cased name to add a new option; it now matches the existing one, and existing options can only be renamed in Notion.

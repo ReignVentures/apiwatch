@@ -1,0 +1,33 @@
+# Authored 2026-10-12 from lead #16 (Notion changelog, October 9, 2026, "Admin API list endpoints accept start_cursor"),
+# verified against the primary sources: the Notion changelog (https://developers.notion.com/page/changelog.md) and the
+# Admin API references List MCP client connections (https://developers.notion.com/reference/admin/list-mcp-client-connections.md,
+# GET /v1/mcp_client_connections) and List personal access tokens
+# (https://developers.notion.com/reference/admin/list-personal-access-tokens.md, GET /v1/spaces/{space_id}/personal_access_tokens),
+# both on server https://api.notion.com/admin.
+# 2026-10-12 independent review (docs/REVIEW.md): fix. Facts, date, severity and evidence confirmed; context narrowed so
+# /personal_access_tokens needs a /spaces/ path in the file (GitLab's REST API uses the same segment).
+# Severity: deprecation. The cursor query parameter still works, but the changelog says it is deprecated and the OpenAPI
+# marks it deprecated with "use start_cursor"; no removal date is given. Sending both with different values now fails (400).
+# Scope: start_cursor/next_cursor are claimed by notion-2026-04-20-query-pagination-cap, so the signatures are the two
+# admin endpoint paths only; context needs "notion" and "cursor" so only paginating code is matched.
+id: notion-2026-10-09-admin-list-cursor-deprecated
+vendor: Notion
+surface: Admin API List MCP client connections (GET /v1/mcp_client_connections) and List personal access tokens (GET /v1/spaces/{space_id}/personal_access_tokens) — pagination parameter
+kind: rest
+severity: deprecation
+effective: "2026-10-09"
+summary: Two Notion Admin API list endpoints now honor start_cursor; the cursor parameter is deprecated, and sending both with different values returns 400
+detail: As of October 9, 2026, List MCP client connections and List personal access tokens accept start_cursor, like other Admin API list endpoints. Before, these endpoints ignored start_cursor and returned the first page again, so code paginating with start_cursor saw the first page repeated. The cursor parameter still works but is deprecated (the API reference marks it "Deprecated; use start_cursor"); no removal date has been announced. A request that sends both cursor and start_cursor with different values fails with a 400 error.
+signatures: ["/v1/mcp_client_connections", "/personal_access_tokens"]
+context: [["notion", "cursor", "/v1/mcp_client_connections"], ["notion", "cursor", "/spaces/"]]
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-10-12"
+evidence:
+  - "October 9, 2026"
+  - "ignored start_cursor and returned the first page again"
+  - "The cursor parameter still works but is deprecated."
+  - "If you send both with different values"
+  - {url: "https://developers.notion.com/reference/admin/list-mcp-client-connections.md", text: "Deprecated; use start_cursor."}
+fix_hint: Paginate these endpoints with start_cursor set to the previous response's next_cursor, and stop sending cursor. Never send both parameters. Remove any workaround that compensated for start_cursor returning the first page again.

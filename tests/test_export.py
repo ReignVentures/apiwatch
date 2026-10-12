@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from apiwatch.models import load_records
+from apiwatch.site import ORDER
 
 ROOT = Path(__file__).parent.parent
 SCRIPT = ROOT / "scripts" / "export_public.py"
@@ -29,7 +30,7 @@ def test_export_fills_what_it_caught_from_published_records(tmp_path):
     assert f"The feed holds {len(published)} reviewed changes" in readme
     assert "ExampleDocs" not in readme                                          # the illustrative record
     section = readme.split("## What it caught\n")[1].split("\n## ")[0]
-    nxt = sorted((r for r in published if r.effective >= "2026-10-06"), key=lambda r: r.effective)[:5]
+    nxt = sorted((r for r in published if r.effective >= "2026-10-06"), key=lambda r: (r.effective, ORDER[r.severity], r.id))[:5]
     for r in nxt:
         assert f"(https://apiwatch.reignventures.co/records/{r.id})" in section
     assert section.count("](https://apiwatch.reignventures.co/records/") == len(nxt)
