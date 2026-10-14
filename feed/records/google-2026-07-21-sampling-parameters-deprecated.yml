@@ -6,14 +6,18 @@
 # 2026-09-24 rehearsal: bare words replaced with parameter forms (kwarg, object key, JSON key, Go field); prose and log text no longer match. 10 of 15 sampled hits in google-gemini/cookbook were false before.
 # 2026-09-24 rehearsal: a parameter name inside a quoted string ('top_k=') is command parsing or help text, not a request parameter (Lyria RealTime demo).
 # 2026-09-24 notebook review: dropped the Go-cased forms (they matched prose in Python notebooks) and excluded Python parameter annotations (a function's own `temperature: float`), which are plumbing, not requests.
+# 2026-10-14 night shift: latest-model.md.txt now covers Gemini 4 Argon (Oct 13) and its checklist line no longer says "deprecated";
+# Fresh reviewer (fix): the Gemini 3.6 guide says the parameters are "deprecated and ignored" from Gemini 3.6 Flash and 3.5 Flash-Lite
+# (both GA on July 21, 2026) and all later models, and a 400 is announced for future generations. Severity deprecation -> silent,
+# summary/detail/fix_hint updated, evidence moved from the 3.5 guide and latest-model page to whats-new-gemini-3.6.md.txt.
 id: google-2026-07-21-sampling-parameters-deprecated
 vendor: Google
 surface: Gemini API generation config temperature, top_p, top_k
 kind: rest
-severity: deprecation
+severity: silent
 effective: '2026-07-21'
-summary: Google deprecated the temperature, top_p and top_k sampling parameters in the Gemini API on July 21, 2026
-detail: The July 21, 2026 Gemini API changelog marks temperature, top_p and top_k as deprecated. The Gemini 3.x guides say they are no longer recommended for any Gemini 3.x model and to remove them from all requests. No removal date or error behavior is announced, and the API reference still documents temperature as optional.
+summary: Google deprecated temperature, top_p and top_k in the Gemini API on July 21, 2026; Gemini 3.6+ models ignore them
+detail: The July 21, 2026 Gemini API changelog marks temperature, top_p and top_k as deprecated. Starting with Gemini 3.6 Flash and Gemini 3.5 Flash-Lite, and for all future models, the API ignores them; Google says supplying them will return an HTTP 400 error in future model generations, with no date given. Remove them from all requests.
 signatures:
 - temperature=
 - 'temperature:'
@@ -58,12 +62,12 @@ exclude:
 source_url: https://ai.google.dev/gemini-api/docs/changelog.md.txt
 verified: true
 verified_by: claude
-verified_on: '2026-09-24'
+verified_on: '2026-10-14'
 evidence:
 - July 21, 2026
 - temperature, top_p and top_k are now deprecated
-- url: https://ai.google.dev/gemini-api/docs/latest-model.md.txt
-  text: Remove deprecated sampling parameters
-- url: https://ai.google.dev/gemini-api/docs/whats-new-gemini-3.5.md.txt
-  text: no longer recommended for all Gemini 3.x models
-fix_hint: Remove temperature, top_p and top_k from generation configs; the Gemini 3.5 guide suggests a system instruction with explicit rules where you relied on low temperature for determinism.
+- url: https://ai.google.dev/gemini-api/docs/whats-new-gemini-3.6.md.txt
+  text: deprecated and ignored
+- url: https://ai.google.dev/gemini-api/docs/whats-new-gemini-3.6.md.txt
+  text: supplying these parameters returns an HTTP 400 error
+fix_hint: Remove temperature, top_p and top_k from generation configs; the Gemini 3.6 guide suggests a system instruction with explicit rules where you relied on low temperature for determinism.
