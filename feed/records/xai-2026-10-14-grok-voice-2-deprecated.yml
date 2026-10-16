@@ -1,0 +1,24 @@
+# Authored by Claude on 2026-10-16 from the primary source: xAI release notes (October 14 entry "Grok Voice 2.0 deprecation";
+# the day label "October 14" is only in the HTML a browser gets; docs.x.ai serves apiwatch check the Markdown twin, which has just
+# the "October" heading, so the day cannot be an evidence string) and the Speech to Speech page ("Upgrading from Grok Voice 2.0").
+# Neither page gives a removal or end-of-life date, and neither says requests are routed, so severity is deprecation. Independent review (docs/REVIEW.md) on 2026-10-16: pass, no changes; the reviewer confirmed the October 14 day label in the HTML.
+# No exclude: token-aware matching does not hit grok-voice-3.0, grok-voice-latest or grok-voice-transcribe-* with this signature (checked with attribute.scan).
+id: xai-2026-10-14-grok-voice-2-deprecated
+vendor: xAI
+surface: Speech to Speech (Realtime) model grok-voice-2.0
+kind: model
+severity: deprecation
+effective: "2026-10-14"
+summary: xAI deprecated grok-voice-2.0 on October 14, 2026; callers who pin it should set model to grok-voice-3.0 (same price, same API). No removal date announced
+detail: "xAI's release notes (October 14 entry) say grok-voice-2.0 is deprecated and that callers should upgrade by setting model to grok-voice-3.0 or grok-voice-latest, at the same price. The same day, grok-voice-3.0 became available and grok-voice-latest began pointing to it, so sessions using the alias are already upgraded. The Speech to Speech docs say Grok Voice 3.0 uses the same endpoint, session parameters, and events as Grok Voice 2.0, and still list grok-voice-2.0 as the previous-generation voice model. No removal or end-of-life date is given, and the sources do not say requests to grok-voice-2.0 fail or are routed elsewhere."
+signatures: ["grok-voice-2.0"]
+source_url: "https://docs.x.ai/developers/release-notes"
+verified: true
+verified_by: claude
+verified_on: "2026-10-16"
+evidence:
+  - "Grok Voice 2.0 deprecation"
+  - "grok-voice-latest now points to grok-voice-3.0"
+  - "grok-voice-2.0 is deprecated"
+  - {url: "https://docs.x.ai/developers/model-capabilities/audio/speech-to-speech", text: "if you pin grok-voice-2.0, set model to grok-voice-3.0"}
+fix_hint: Set model to grok-voice-3.0 where grok-voice-2.0 is pinned (the endpoint, session parameters, events, and price are unchanged). xAI recommends pinning a versioned name in production rather than grok-voice-latest. Grok Voice 3.0 enables reasoning by default (reasoning.effort "high"; set "none" to disable), so re-test sessions after switching.

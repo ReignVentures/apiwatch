@@ -1,0 +1,28 @@
+# Authored 2026-10-16 from the watch lead (Notion changelog, October 5, 2026), verified against the primary sources:
+# the Notion changelog (https://developers.notion.com/page/changelog.md) and the Supported tools page
+# (https://developers.notion.com/guides/mcp/mcp-supported-tools.md). Independent review (docs/REVIEW.md) on 2026-10-16: pass;
+# expiry wording narrowed to the URLs notion-get-file-download-urls returns, as the source states.
+# Severity: silent. notion-fetch calls still succeed, but page markdown no longer carries signed URLs for files in page
+# blocks; code that pulled download links out of that markdown gets notion-file-block:// references instead.
+# Signatures: only notion-fetch. The OpenAI-client name `fetch` is affected too (Supported tools, OpenAI section), but it
+# is too generic to scan for even with context (JS fetch() in any file that mentions notion), so it is left out.
+id: notion-2026-10-05-mcp-fetch-unsigned-file-urls
+vendor: Notion MCP
+surface: MCP tool notion-fetch (fetch for OpenAI clients) — file links in page markdown
+kind: mcp
+severity: silent
+effective: "2026-10-05"
+summary: notion-fetch page markdown now cites files in page blocks by notion-file-block:// references instead of signed URLs, unless include_file_urls is true
+detail: Page markdown from notion-fetch in Notion MCP now cites files in page blocks by stable notion-file-block:// references and doesn't sign them. Files in database properties are still signed inline. include_file_urls defaults to false; passing include_file_urls true returns a references map from each reference to a signed URL (for ChatGPT connections, fetch puts it in metadata.references). The new notion-get-file-download-urls tool takes up to 25 references and returns files with reference, url, and expiry_time, plus unresolved references with a reason; those URLs expire after a few minutes. Code that read download links straight out of fetched page markdown now gets references, with no error.
+signatures: ["notion-fetch"]
+context: ["notion"]
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-10-16"
+evidence:
+  - "notion-fetch no longer signs file URLs by default"
+  - "stable notion-file-block:// references, without signed URLs"
+  - "October 5, 2026"
+  - {url: "https://developers.notion.com/guides/mcp/mcp-supported-tools", text: "include_file_urls defaults to false."}
+fix_hint: Where you need file downloads from fetched page markdown, pass include_file_urls true to notion-fetch and read the references map, or call notion-get-file-download-urls with up to 25 notion-file-block:// references copied exactly from the markdown. URLs from notion-get-file-download-urls expire after a few minutes, so request fresh ones when needed. When you edit or copy page markdown, keep the notion-file-block:// references, not the signed URLs.
