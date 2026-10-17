@@ -537,3 +537,56 @@ def test_terms_and_privacy_pages_are_linked_everywhere(tmp_path):
         assert 'terms.html">Terms</a>' in html and 'privacy.html">Privacy</a>' in html, page
     pro = (out / "pro" / "index.html").read_text()
     assert 'href="../terms.html"' in pro and 'href="../privacy.html"' in pro
+
+
+def test_per_vendor_atom_feeds(tmp_path):
+    build(tmp_path, base_url="https://feed.example.com")
+    out = tmp_path / "site"
+    ns = {"a": "http://www.w3.org/2005/Atom"}
+    acme = ET.parse(out / "vendors" / "acme.xml").getroot()
+    assert acme.find("a:id", ns).text == "urn:apiwatch:vendor:acme"
+    assert acme.find("a:title", ns).text == "apiwatch: Acme API changes"
+    links = {e.get("rel"): e.get("href") for e in acme.findall("a:link", ns)}
+    assert links == {"self": "https://feed.example.com/vendors/acme.xml", "alternate": "https://feed.example.com/vendors/acme"}
+    ids = [e.find("a:id", ns).text for e in acme.findall("a:entry", ns)]
+    assert ids == ["urn:apiwatch:acme-2026-10-01-soon", "urn:apiwatch:acme-2026-08-01-past"]   # no draft, no other vendor
+    # same entry format as the site feed
+    site_feed = ET.parse(out / "feed.xml").getroot()
+    def entry(root, rid):
+        e = next(x for x in root.findall("a:entry", ns) if x.find("a:id", ns).text == f"urn:apiwatch:{rid}")
+        return ET.tostring(e)
+    assert entry(acme, "acme-2026-10-01-soon") == entry(site_feed, "acme-2026-10-01-soon")
+    beta = ET.parse(out / "vendors" / "beta-mcp.xml").getroot()
+    assert [e.find("a:id", ns).text for e in beta.findall("a:entry", ns)] == ["urn:apiwatch:beta-2026-07-01-human"]
+    assert site_feed.find("a:id", ns).text == "urn:apiwatch:feed"
+    assert site_feed.find("a:title", ns).text == "apiwatch: API & MCP change feed"
+    # linked from the vendor page head and body, relative to /vendors/<slug>
+    page = (out / "vendors" / "acme.html").read_text()
+    assert '<link rel="alternate" type="application/atom+xml" title="apiwatch: Acme API changes" href="acme.xml">' in page
+    assert '<a href="acme.xml">Atom feed for Acme</a>' in page
+    assert "beta-mcp.xml" not in page
+    headers = (out / "_headers").read_text()
+    for slug in ("acme", "beta-mcp"):
+        assert f"/vendors/{slug}.xml\n  Content-Type: application/atom+xml; charset=utf-8\n" in headers
+    assert headers.startswith(site.HEADERS)
+    # feeds aren't pages: not in the sitemap
+    assert ".xml" not in (out / "sitemap.xml").read_text().replace("sitemap.xml", "")
+
+
+def test_vendor_feed_escapes_vendor_names(tmp_path):
+    recs = tmp_path / "recs"
+    recs.mkdir()
+    (recs / "x.yml").write_text(yaml.safe_dump(rec("x-2026-01-01-amp", vendor='A&B "Co" <x>', **REVIEWED)))
+    build(tmp_path, records=recs, base_url="https://feed.example.com")
+    out = tmp_path / "site"
+    root = ET.parse(out / "vendors" / "a-b--co---x.xml").getroot()
+    assert root.find("{http://www.w3.org/2005/Atom}title").text == 'apiwatch: A&B "Co" <x> API changes'
+    page = (out / "vendors" / "a-b--co---x.html").read_text()
+    assert 'title="apiwatch: A&amp;B &quot;Co&quot; &lt;x&gt; API changes"' in page and "Atom feed for A&amp;B" in page
+
+
+def test_vendor_feed_without_a_base_url_has_no_links(tmp_path):
+    build(tmp_path)
+    root = ET.parse(tmp_path / "site" / "vendors" / "acme.xml").getroot()
+    assert root.findall("{http://www.w3.org/2005/Atom}link") == []
+    assert len(root.findall("{http://www.w3.org/2005/Atom}entry")) == 2

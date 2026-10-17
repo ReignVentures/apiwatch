@@ -67,11 +67,10 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
     (out / "ids").mkdir(exist_ok=True)
     (out / "style.css").write_text(CSS)
     (out / "site.js").write_text(JS)
-    (out / "_headers").write_text(HEADERS)   # Cloudflare Pages response headers
-
     by_vendor: dict[str, list[ChangeRecord]] = defaultdict(list)
     for r in recs:
         by_vendor[r.vendor].append(r)
+    (out / "_headers").write_text(_headers(by_vendor))   # Cloudflare Pages response headers
 
     # canonical URLs are the clean paths Cloudflare Pages serves (it 308-redirects "x.html" to "x"), on base_url
     (out / "index.html").write_text(_canonical(_index(recs, by_vendor, today), base, ""))
@@ -94,9 +93,14 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
     for r in recs:
         (out / "records" / f"{r.id}.html").write_text(_canonical(_record_page(r, today, id_links, base), base, f"records/{r.id}"))
     for vendor, rs in by_vendor.items():
-        (out / "vendors" / f"{vendor_slug(vendor)}.html").write_text(_canonical(
+        slug = vendor_slug(vendor)
+        # served at /vendors/<slug>, so the relative href lands on /vendors/<slug>.xml
+        feed_link = (f'<link rel="alternate" type="application/atom+xml" title="{escape(f"{SITE_TITLE}: {vendor} API changes")}" '
+                     f'href="{slug}.xml">\n')
+        (out / "vendors" / f"{slug}.html").write_text(_canonical(
             _page(f"{vendor} API deprecations and breaking changes", _vendor_body(vendor, rs, today), depth=1,
-                  description=_vendor_description(vendor, rs, today)), base, f"vendors/{vendor_slug(vendor)}"))
+                  description=_vendor_description(vendor, rs, today), head=feed_link), base, f"vendors/{slug}"))
+        (out / "vendors" / f"{slug}.xml").write_text(_atom(rs, base, today, vendor=vendor))
     for slug, (sigs, rs) in ids.items():
         (out / "ids" / f"{slug}.html").write_text(_canonical(_id_page(sigs, rs, today, base, slug), base, f"ids/{slug}"))
     # id_slug never returns "index", so this can't collide with an id page; Cloudflare Pages serves it at /ids/
@@ -232,7 +236,8 @@ def _index(recs, by_vendor, today) -> str:
 
 def _vendor_body(vendor, rs, today) -> str:
     return (f'<p class="crumb"><a href="../index.html">All changes</a></p><h1>{escape(vendor)}</h1>'
-            f'<p class="meta">{len(rs)} change{"s" if len(rs) != 1 else ""}</p>'
+            f'<p class="meta">{len(rs)} change{"s" if len(rs) != 1 else ""} · '
+            f'<a href="{vendor_slug(vendor)}.xml">Atom feed for {escape(vendor)}</a></p>'
             + _split(rs, today, 1) + CTA)
 
 
@@ -645,7 +650,8 @@ def _json_feed(recs, base) -> str:
     return json.dumps(feed, indent=2)
 
 
-def _atom(recs, base, today) -> str:
+def _atom(recs, base, today, vendor: str = "") -> str:
+    """The site feed, or with vendor set, that vendor's feed at /vendors/<slug>.xml (same entries, own id and links)."""
     entries = []
     for r in recs:
         link = f'<link href="{xesc(base)}records/{xesc(r.id)}"/>' if base else ""
@@ -657,13 +663,20 @@ def _atom(recs, base, today) -> str:
 <category term="{xesc(r.severity)}"/><category term="{xesc(r.kind)}"/>
 <summary>{xesc(r.detail)}</summary>
 </entry>""")
-    self_link = f'<link rel="self" href="{xesc(base)}feed.xml"/>' if base else ""
+    if vendor:
+        slug = vendor_slug(vendor)
+        feed_id, title, path = f"urn:apiwatch:vendor:{slug}", f"{SITE_TITLE}: {vendor} API changes", f"vendors/{slug}.xml"
+        links = (f'<link rel="self" href="{xesc(base + path)}"/>\n<link rel="alternate" type="text/html" '
+                 f'href="{xesc(base)}vendors/{xesc(slug)}"/>') if base else ""
+    else:
+        feed_id, title = "urn:apiwatch:feed", f"{SITE_TITLE}: API & MCP change feed"
+        links = f'<link rel="self" href="{xesc(base)}feed.xml"/>' if base else ""
     return f"""<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-<id>urn:apiwatch:feed</id>
-<title>{SITE_TITLE}: API &amp; MCP change feed</title>
+<id>{feed_id}</id>
+<title>{xesc(title)}</title>
 <subtitle>{xesc(TAGLINE)}</subtitle>
-{self_link}
+{links}
 <updated>{today.isoformat()}T00:00:00Z</updated>
 <author><name>{SITE_TITLE}</name></author>
 {"".join(entries)}
@@ -788,3 +801,9 @@ HEADERS = """/*
 /feed.json
   Content-Type: application/feed+json; charset=utf-8
 """
+
+
+def _headers(by_vendor) -> str:
+    # one rule per vendor feed: listing them keeps the match exact rather than relying on splat rules
+    return HEADERS + "".join(f"\n/vendors/{vendor_slug(v)}.xml\n  Content-Type: application/atom+xml; charset=utf-8\n"
+                             for v in sorted(by_vendor))
