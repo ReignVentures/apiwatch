@@ -1,3 +1,4 @@
+# Night shift 2026-10-21: repaired after the Supported tools page changed with Notion's October 20, 2026 search split. Summary, detail, fix_hint and the Supported tools evidence now reflect notion-connector-search and the connector_search access key. Fresh reviewer: fix (summary and detail moved to past tense), applied.
 # Authored from the primary source (Notion changelog and Supported tools) on 2026-10-09. Independent review (docs/REVIEW.md) on 2026-10-09: pass, no changes.
 id: notion-2026-10-07-mcp-ai-search-unlisted
 vendor: Notion MCP
@@ -5,18 +6,18 @@ surface: MCP tool notion-ai-search (ai-search for OpenAI clients) — dropped fr
 kind: mcp
 severity: silent
 effective: "2026-10-07"
-summary: Hosted Notion MCP sessions now list one search tool, notion-search; notion-ai-search no longer appears in tools/list but stays callable by name
-detail: Hosted Notion MCP sessions now list one content-search tool, notion-search (search for OpenAI clients), whose description matches the user's AI search access. notion-ai-search (ai-search for OpenAI clients) no longer appears in tools/list. It stays callable by name and behaves as before, so clients with a cached tool list keep working, but agents that pick tools from a fresh tools/list no longer see it, and code that looks for it there won't find it. The server instructions also tell clients to use the Notion search tool for every content search, and the Supported tools page says to call notion-search in new code. No removal date is given. notion-get-tool-access still reports AI search access under ai_search. Workspace-owned connections, which have a selected tool list, keep the earlier tool list and descriptions, as does a session where Notion can't read the user's AI search access while it builds the tool list.
+summary: From October 7, 2026, hosted Notion MCP sessions no longer list notion-ai-search (ai-search for OpenAI clients) in tools/list; it stays callable by name, and new code should call notion-search (and, since October 20, notion-connector-search for connected sources)
+detail: On October 7, 2026, hosted Notion MCP sessions began listing one content-search tool, notion-search (search for OpenAI clients), whose description then matched the user's AI search access, and the server instructions told clients to use the Notion search tool for every content search. notion-ai-search (ai-search for OpenAI clients) no longer appears in tools/list. It stays callable by name and still searches Notion and connected sources together, so clients with a cached tool list keep working, but agents that pick tools from a fresh tools/list no longer see it, and code that looks for it there won't find it. No removal date is given. Since October 20, 2026, hosted notion-search searches only Notion pages and databases, and connected sources are searched with a new notion-connector-search tool, which sessions list when the user has AI search and the workspace has a connected source (see notion-2026-10-20-mcp-connector-search-split); the Supported tools page says to call notion-search and notion-connector-search in new code, and notion-get-tool-access reports AI search access under connector_search. Workspace-owned connections, which have a selected tool list, keep the earlier tool list and descriptions, and report ai_search only when notion-ai-search is selected.
 signatures: ["notion-ai-search", "ai-search"]
 context: ["notion"]
 source_url: "https://developers.notion.com/page/changelog"
 verified: true
 verified_by: claude
-verified_on: "2026-10-09"
+verified_on: "2026-10-21"
 evidence:
   - "One search tool in Notion MCP"
   - "notion-ai-search no longer appears in tools/list"
   - "it stays callable by name"
   - "October 7, 2026"
-  - {url: "https://developers.notion.com/guides/mcp/mcp-supported-tools", text: "In new code, call notion-search."}
-fix_hint: Call notion-search (search for OpenAI clients) for content search in new code; it runs AI search when the user has it. Don't infer AI search access from whether notion-ai-search is listed; read ai_search from notion-get-tool-access if you need it. On workspace-owned connections, use the search tool the connection lists.
+  - {url: "https://developers.notion.com/guides/mcp/mcp-supported-tools", text: "In new code, call notion-search and notion-connector-search."}
+fix_hint: Call notion-search for Notion content in new code, and notion-connector-search for connected sources such as Slack or Google Drive when the session lists it. Don't infer AI search access from whether notion-ai-search is listed; read connector_search from notion-get-tool-access if you need it. On workspace-owned connections, use the search tool the connection lists.

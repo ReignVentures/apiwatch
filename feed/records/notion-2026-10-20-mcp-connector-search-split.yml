@@ -1,0 +1,29 @@
+# Independent review (docs/REVIEW.md) on 2026-10-21: pass, no changes.
+# Authored from the primary source on 2026-10-21: the Notion changelog entry of October 20, 2026
+# (https://developers.notion.com/page/changelog.md) and the Supported tools page
+# (https://developers.notion.com/guides/mcp/mcp-supported-tools.md). Reviewed the same day (see first line).
+# Severity: silent. notion-search calls still succeed in hosted sessions, but return only Notion pages and databases;
+# connected-source results (Slack, Google Drive, GitHub, mail, calendar) now come from notion-connector-search.
+# Signatures: notion-search and notion-ai-search belong to sibling records, so this one scans for the identifiers new
+# with this change: the notion-connector-search tool and the connector_search access key.
+id: notion-2026-10-20-mcp-connector-search-split
+vendor: Notion MCP
+surface: MCP tool notion-search (search for OpenAI clients) — connected sources moved to new notion-connector-search
+kind: mcp
+severity: silent
+effective: "2026-10-20"
+summary: In hosted Notion MCP sessions, notion-search now searches only Notion pages and databases; connected sources such as Slack and Google Drive moved to a new notion-connector-search tool
+detail: In hosted Notion MCP sessions, notion-search now searches only Notion pages and databases and reports type "workspace_search"; it no longer returns results from connected sources, with no error. The new notion-connector-search tool searches connected sources such as Slack, Google Drive, GitHub, Jira, mail, and calendar, and not Notion. Sessions list it only when the user has AI search (Business or Enterprise with Notion AI) and the workspace has at least one connected source. It takes question, keywords, lookback, and an optional sources list; the response reports searchedSources, lists failed or timed-out sources in searchTargetStatuses, and explains skipped or failed sources in warnings. notion-fetch can't open its results. It keeps its notion- prefix for OpenAI clients, and notion-get-tool-access reports its access under connector_search. notion-ai-search still doesn't appear in tools/list but stays callable by name and still searches Notion and connected sources together. Workspace-owned connections keep their selected tools and don't list notion-connector-search.
+signatures: ["notion-connector-search", "connector_search"]
+context: ["notion"]
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-10-21"
+evidence:
+  - "Separate Notion and connected-source search in Notion MCP"
+  - "notion-search now searches only Notion pages and databases"
+  - "The new notion-connector-search tool searches connected sources"
+  - "October 20, 2026"
+  - {url: "https://developers.notion.com/guides/mcp/mcp-supported-tools", text: "In new code, call notion-search and notion-connector-search."}
+fix_hint: In hosted sessions, call notion-search for Notion pages and databases and notion-connector-search for connected sources; for a question that covers both, call both in parallel. Only call notion-connector-search when the session lists it, and pass sources (for example ["slack"]) to limit which sources it searches. Open its results by their url, not with notion-fetch, and check warnings and searchTargetStatuses for sources that failed or timed out. On workspace-owned connections, use the search tool the connection lists.

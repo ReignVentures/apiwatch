@@ -1,3 +1,4 @@
+# Night shift 2026-10-21: summary, detail and fix_hint updated for Notion's October 20, 2026 search split (hosted notion-search is Notion-only; connected sources moved to notion-connector-search). Fresh reviewer: fix, applied.
 # Independent review (docs/REVIEW.md) on 2026-10-09: pass. Corrected from the primary source: fix_hint no longer routes content search to notion-ai-search (the October 7, 2026 entry says to call notion-search).
 # Independent review (docs/REVIEW.md) on 2026-09-24: fixed. The summary and detail now say the Sep 10 follow-up partly reversed the split for connections that can use AI search.
 id: notion-2026-09-02-mcp-search-split
@@ -6,17 +7,17 @@ surface: MCP tool notion-search → notion-search (keyword) + notion-ai-search (
 kind: mcp
 severity: silent
 effective: "2026-09-02"
-summary: notion-search became keyword-only and stopped searching connected apps; semantic search moved to a new notion-ai-search tool; partly reversed Sep 10 for connections that can use AI search
-detail: notion-search now matches short, specific terms in Notion only, with no Slack, Google Drive, or Jira results. Agents keep calling it and get narrower results with no error; from Sep 10 this still holds for connections that can't use AI search and for calls with exact filters, an empty query, or a non-relevance sort. notion-ai-search needs Notion AI. The old content_search_mode parameter still works but is no longer advertised (since Sep 10, content_search_mode "ai_search" returns a permission error on connections that can't use notion-ai-search), so agents built from the tool list won't find it. A Sep 10 follow-up routes keyword content queries on notion-search to AI search when the connection allows it, so behavior now depends on plan and tool selection.
+summary: On Sep 2, notion-search became keyword-only and stopped searching connected apps, and semantic search moved to a new notion-ai-search tool; a Sep 10 follow-up routed some notion-search queries back to AI search, which now applies only on workspace-owned connections
+detail: 'From September 2, 2026, notion-search matched short, specific terms in Notion only, with no Slack, Google Drive, or Jira results, so agents that kept calling it got narrower results with no error. Semantic search moved to a new notion-ai-search tool. The old content_search_mode parameter on notion-search kept working (workspace_search behaves like notion-search, ai_search like notion-ai-search) but is no longer advertised, so agents built from the tool list won''t find it. A September 10 follow-up routed keyword content queries on notion-search to AI search when the connection can use it (not calls with an exact filter, an empty query, or a sort other than relevance), and made content_search_mode "ai_search" return a permission error on connections that can''t use notion-ai-search. That routing now applies only to workspace-owned connections: since October 7, 2026 hosted sessions no longer list notion-ai-search (see notion-2026-10-07-mcp-ai-search-unlisted), and since October 20, 2026 hosted notion-search searches only Notion pages and databases, with connected sources searched by notion-connector-search.'
 signatures: ["notion-search", "content_search_mode"]
 source_url: "https://developers.notion.com/page/changelog"
 verified: true
 verified_by: claude
-verified_on: "2026-10-09"
+verified_on: "2026-10-21"
 evidence:
   - "Notion MCP splits keyword search and AI search"
   - "no longer searches connected apps like Slack, Google Drive, and Jira"
   - "The parameter is no longer advertised"
   - "Content searches sent to notion-search now run AI search"
   - "September 2, 2026"
-fix_hint: Since Oct 7, call notion-search for content search; it runs AI search when the user has it, and notion-ai-search is no longer listed in tools/list. On workspace-owned connections, use the search tool the connection lists. When ai_search is available, add an eval that expects a cross-source result.
+fix_hint: Since Oct 20, hosted notion-search searches only Notion pages and databases; call notion-connector-search for Slack, Google Drive and other connected sources when the session lists it (it needs AI search and a connected source). notion-ai-search is no longer listed in tools/list. On workspace-owned connections, use the search tool the connection lists. Stop sending content_search_mode; call the search tool you want directly.
