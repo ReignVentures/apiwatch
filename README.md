@@ -65,6 +65,24 @@ Scans run locally with no network calls. Your code never leaves your machine or 
 
 To leave generated or copied files out of a scan, add a `.apiwatchignore` file at the repository root: one glob per line (`agents/*.json`), a trailing `/` for a directory (`generated/`), `#` for comments. Translation folders (`locales/`, `i18n/`) are skipped by default.
 
+## MCP server
+
+AI agents can ask the feed directly while they work: does this model id or API have a published change, when, and what replaces it?
+One public URL, no install, no account: `https://apiwatch.reignventures.co/mcp` (Streamable HTTP, both the
+2026-07-28 and the earlier `initialize` protocol eras).
+
+```bash
+claude mcp add --transport http apiwatch https://apiwatch.reignventures.co/mcp
+```
+
+Tools: `check_model`, `check_identifiers`, `list_upcoming`, `search_changes`, `get_record`. It answers only from the
+reviewed records the site publishes, stores nothing it is sent, and says "no record" (never "safe") for an id it
+doesn't know. Setup for other clients: https://apiwatch.reignventures.co/mcp-server
+
+Two more tools, `list_watched_mcp_servers` and `mcp_server_changes`, answer from apiwatch's history of observed tool
+changes on some public MCP servers (https://apiwatch.reignventures.co/mcp-servers/): tools removed or renamed, new
+required parameters, rewritten descriptions, changed hints. They never return a server's own tool descriptions.
+
 ## How records are verified
 
 A record is published only after a reviewer that did not write it checks every field against the vendor's primary source, and an automated check confirms the quoted evidence is still on that page. The full rules are in [docs/REVIEW.md](docs/REVIEW.md). If a vendor edits or removes the page, the record comes off the site until it is reviewed again.

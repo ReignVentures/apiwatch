@@ -26,6 +26,17 @@ def main(argv: list[str] | None = None) -> int:
                     help="fail (exit 2) if --check-results is missing, instead of publishing without it (CI)")
     st.add_argument("--pro-checkout-url", default="", help="Stripe payment link for apiwatch Pro (buy.stripe.com/...)")
     st.add_argument("--pro-app-slug", default="", help="the apiwatch Pro GitHub App's slug (for its install link)")
+    st.add_argument("--mcp-watch", default="feed/mcp-watch.yml", type=Path, help="watched MCP servers (docs/MCP-HISTORY.md)")
+    st.add_argument("--mcp-history", default="feed/mcp-history", type=Path, help="their history files")
+
+    hi = sub.add_parser("history", help="public MCP server change history (docs/MCP-HISTORY.md)")
+    hsub = hi.add_subparsers(dest="history_cmd", required=True)
+    hr = hsub.add_parser("run", help="check every watched server's tools/list once (network; no credentials, no tools/call)")
+    hr.add_argument("--watch", default="feed/mcp-watch.yml", type=Path)
+    hr.add_argument("--dir", default="feed/mcp-history", type=Path)
+    hr.add_argument("--only", action="append", metavar="SLUG", help="only this server (repeatable)")
+    hr.add_argument("--fixtures", type=Path, metavar="DIR",
+                    help="read <slug>.json tools/list results from DIR instead of the network (a missing file is a failed check)")
 
     ck = sub.add_parser("check", help="confirm each record's evidence still appears on its vendor source (network)")
     ck.add_argument("--records", default="feed/records", type=Path)
@@ -94,9 +105,31 @@ def main(argv: list[str] | None = None) -> int:
             for rid in sorted(exclude):
                 print(f"site: leaving out {rid} (evidence missing from its source)")
         n, path = site.build(args.records, args.out, base_url=args.base_url, exclude=exclude,
-                             pro_checkout_url=args.pro_checkout_url, pro_app_slug=args.pro_app_slug)
+                             pro_checkout_url=args.pro_checkout_url, pro_app_slug=args.pro_app_slug,
+                             mcp_watch=args.mcp_watch, mcp_history=args.mcp_history)
         print(f"site: {n} records → {path}")
         return 0
+
+    if args.cmd == "history":
+        from . import history
+        servers = history.load_watch(args.watch)
+        if args.only:
+            unknown = set(args.only) - {s.slug for s in servers}
+            if unknown:
+                print(f"history: not in {args.watch}: {', '.join(sorted(unknown))}", file=sys.stderr)
+                return 2
+            servers = [s for s in servers if s.slug in args.only]
+        fetch = history.default_fetch
+        if args.fixtures:
+            fx = args.fixtures
+            fetch = lambda s: probe.fetch_mcp(probe.Endpoint(id=s.slug, source=f"mcp:file:{fx / (s.slug + '.json')}"))
+        results = history.run(servers, args.dir, fetch=fetch)
+        for slug, _, what in results:
+            print(f"  {slug}: {what}")
+        failed = sum(not ok for _, ok, _ in results)
+        print(f"history: {len(results)} server(s) checked, {failed} failed")
+        # some servers failing is normal (a timeout, an outage); fail the run only when none answered
+        return 1 if results and failed == len(results) else 0
 
     if args.cmd == "check":
         from . import check

@@ -14,7 +14,8 @@ from html import escape
 from pathlib import Path
 from xml.sax.saxutils import escape as xesc
 
-from . import legal
+from . import history, legal
+from .attribute import record_names
 from .feed import ORDER
 from .models import ChangeRecord, load_records
 
@@ -44,6 +45,8 @@ build fails when a breaking or silent change lands on your code.</p>
 <p class="meta">apiwatch Pro watches every repository in your GitHub organization each night, with nothing to add
 to your workflows, and opens an issue when a new change lands on your code. $19 per month. <a href="/pro/">How Pro works</a>.</p>
 </aside>"""
+MCP_WORKER = Path(__file__).with_name("mcp_worker.js")   # the public MCP server (docs/MCP-SERVER.md)
+MCP_ROUTES = {"version": 1, "include": ["/mcp", "/mcp/*"], "exclude": []}
 PRO_SCAN_TIME = "05:00 UTC"   # when the nightly Pro scan starts
 CHECKOUT = re.compile(r"^https://buy\.stripe\.com/[A-Za-z0-9_/-]+$")
 APP_SLUG = re.compile(r"^[a-z0-9][a-z0-9-]{0,99}$")
@@ -54,9 +57,12 @@ def vendor_slug(vendor: str) -> str:
 
 
 def build(records_dir: Path, out: Path, today: date | None = None, base_url: str = "",
-          exclude: set[str] = frozenset(), pro_checkout_url: str = "", pro_app_slug: str = "") -> tuple[int, Path]:
+          exclude: set[str] = frozenset(), pro_checkout_url: str = "", pro_app_slug: str = "",
+          mcp_watch: Path | None = None, mcp_history: Path | None = None) -> tuple[int, Path]:
     """pro_checkout_url (a buy.stripe.com payment link) and pro_app_slug (the Pro GitHub App) turn the /pro/ pages
-    from "email us" into subscribe and install links; both or neither, and anything malformed is ignored."""
+    from "email us" into subscribe and install links; both or neither, and anything malformed is ignored.
+    mcp_watch (feed/mcp-watch.yml) and mcp_history (feed/mcp-history/) build the MCP server change history pages
+    and /mcp-history.json (docs/MCP-HISTORY.md); without them the index says no servers are watched."""
     today = today or date.today()
     base = base_url.rstrip("/") + "/" if base_url else ""
     recs = [r for r in load_records(records_dir) if r.published and r.id not in exclude]
@@ -70,7 +76,8 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
     by_vendor: dict[str, list[ChangeRecord]] = defaultdict(list)
     for r in recs:
         by_vendor[r.vendor].append(r)
-    (out / "_headers").write_text(_headers(by_vendor))   # Cloudflare Pages response headers
+    views = history.load_views(mcp_watch, mcp_history)
+    (out / "_headers").write_text(_headers(by_vendor, views))   # Cloudflare Pages response headers
 
     # canonical URLs are the clean paths Cloudflare Pages serves (it 308-redirects "x.html" to "x"), on base_url
     (out / "index.html").write_text(_canonical(_index(recs, by_vendor, today), base, ""))
@@ -110,10 +117,15 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
     (out / "404.html").write_text(_page("Not found", '<h1>Not found</h1><p>No page here. '
                                         '<a href="/index.html">See all changes</a>.</p>', up="/"))
     (out / "feed.json").write_text(_json_feed(recs, base))
+    # Cloudflare Pages advanced mode: the worker answers /mcp only; every other path is a static asset as before
+    (out / "_worker.js").write_text(MCP_WORKER.read_text())
+    (out / "_routes.json").write_text(json.dumps(MCP_ROUTES) + "\n")
+    (out / "mcp-server.html").write_text(_canonical(_mcp_page(base), base, "mcp-server"))
     (out / "feed.xml").write_text(_atom(recs, base, today))
+    _mcp_history_pages(out, views, base, today)
     (out / "robots.txt").write_text("User-agent: *\nAllow: /\n" + (f"Sitemap: {base}sitemap.xml\n" if base else ""))
     if base:
-        (out / "sitemap.xml").write_text(_sitemap(recs, by_vendor, ids, base, today))
+        (out / "sitemap.xml").write_text(_sitemap(recs, by_vendor, ids, base, today, views))
     return len(recs), out / "index.html"
 
 
@@ -123,13 +135,15 @@ def _canonical(html: str, base: str, path: str) -> str:
     return html.replace("</head>", f'<link rel="canonical" href="{escape(base + path)}">\n</head>', 1)
 
 
-def _sitemap(recs, by_vendor, ids, base, today) -> str:
-    urls = [(base, today.isoformat()), (f"{base}upcoming", today.isoformat()), (f"{base}pro/", today.isoformat())]
+def _sitemap(recs, by_vendor, ids, base, today, views=()) -> str:
+    urls = [(base, today.isoformat()), (f"{base}upcoming", today.isoformat()), (f"{base}pro/", today.isoformat()),
+            (f"{base}mcp-server", MCP_PAGE_UPDATED)]
     # the id index changes when an id page is added or its key date passes: the latest id page change
     urls.append((f"{base}ids/", max((_id_lastmod(rs, today) for _, rs in ids.values()), default=today.isoformat())))
     urls += [(f"{base}vendors/{vendor_slug(v)}", max(r.verified_on or r.effective for r in rs)) for v, rs in by_vendor.items()]
     urls += [(f"{base}records/{r.id}", _id_lastmod([r], today)) for r in recs]
     urls += [(f"{base}ids/{slug}", _id_lastmod(rs, today)) for slug, (_, rs) in ids.items()]
+    urls += _mcp_history_urls(views, base, today)
     body = "".join(f"<url><loc>{xesc(u)}</loc><lastmod>{d}</lastmod></url>" for u, d in urls)
     return f'<?xml version="1.0" encoding="utf-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{body}</urlset>\n'
 
@@ -167,7 +181,7 @@ def _page(title: str, body: str, depth: int = 0, up: str | None = None, descript
 {head}</head>
 <body>
 <header class="site"><a class="brand" href="{up}index.html">{SITE_TITLE}</a>
-<nav><a href="{up}upcoming.html">Upcoming</a><a href="{up}ids/index.html">Model ids</a><a href="{up}feed.xml">Atom</a><a href="{up}feed.json">JSON</a></nav></header>
+<nav><a href="{up}upcoming.html">Upcoming</a><a href="{up}ids/index.html">Model ids</a><a href="{up}mcp-server.html">MCP server</a><a href="{up}mcp-servers/">MCP servers</a><a href="{up}feed.xml">Atom</a><a href="{up}feed.json">JSON</a></nav></header>
 <main>
 {body}
 </main>
@@ -251,26 +265,7 @@ def _record_page(r: ChangeRecord, today: date, id_links: dict[str, str] | None =
                 'Key facts are re-checked against the source daily.</p>')
     sigs = "".join(f'<a href="../ids/{id_links[s]}.html"><code>{escape(s)}</code></a>' if s in id_links
                    else f"<code>{escape(s)}</code>" for s in r.signatures) or "<span>None recorded</span>"
-    def _words(items):
-        return " or ".join(" + ".join(f"<code>{escape(w)}</code>" for w in ([c] if isinstance(c, str) else c)) for c in items)
-    scope = []
-    if r.files:
-        scope.append("files matching " + ", ".join(f"<code>{escape(g)}</code>" for g in r.files))
-    if r.context:
-        scope.append("files that mention " + _words(r.context))
-    if r.repo_context:
-        pinned = [c for c in r.repo_context if isinstance(c, str) and c.startswith("dep:")]
-        rest = [c for c in r.repo_context if c not in pinned]
-        phrases = []
-        for c in pinned:                       # dep:pypi:stripe@16. → stripe 16.x (pypi)
-            m = re.match(r"dep:(?:(\w+):)?(.+)@(.+)", c)
-            if m:
-                phrases.append(f"<code>{escape(m.group(2))} {escape(m.group(3).rstrip('.'))}.x</code>"
-                               + (f" ({escape(m.group(1))})" if m.group(1) else ""))
-        if phrases:
-            scope.append("repos that depend on " + " or ".join(phrases))
-        if rest:
-            scope.append(("or " if phrases else "") + "repos that mention " + _words(rest) + " (including dependency manifests)")
+    scope = scope_parts(r, lambda w: f"<code>{escape(w)}</code>", escape)
     excl = ('<p class="meta">Not affected (matches inside these are ignored): '
             + ", ".join(f"<code>{escape(e)}</code>" for e in r.exclude) + "</p>") if r.exclude else ""
     if scope:
@@ -300,6 +295,46 @@ def _record_page(r: ChangeRecord, today: date, id_links: dict[str, str] | None =
     ld = _article_ld(r.summary, description, r.surface, f"{base}records/{r.id}" if base else "", _id_lastmod([r], today),
                      [r.source_url])   # the full sentence; the meta description is clipped for search results
     return _page(r.summary, body, depth=1, description=_clip(description), head=_jsonld(ld))
+
+
+def scope_parts(r: ChangeRecord, code=lambda w: w, esc=lambda t: t, both: str = " + ", limit: int = 0) -> list[str]:
+    """The places a scoped record counts, as phrases ("files matching *.py", "repos that depend on stripe 16.x
+    (pypi)"). code() wraps a literal word and esc() escapes other record text: HTML on record pages, plain text
+    in feed.json (where the MCP server reads it). both joins words that must all appear; limit > 0 shortens a
+    list of alternatives to its first `limit` and a count of the rest."""
+    def _alts(items):
+        if limit and len(items) > limit:
+            return " or ".join(items[:limit]) + f" or {len(items) - limit} more"
+        return " or ".join(items)
+
+    def _words(items):
+        return _alts([both.join(code(w) for w in ([c] if isinstance(c, str) else c)) for c in items])
+    scope = []
+    if r.files:
+        scope.append("files matching " + ", ".join(code(g) for g in r.files))
+    if r.context:
+        scope.append("files that mention " + _words(r.context))
+    if r.repo_context:
+        pinned = [c for c in r.repo_context if isinstance(c, str) and c.startswith("dep:")]
+        rest = [c for c in r.repo_context if c not in pinned]
+        phrases = []
+        for c in pinned:                       # dep:pypi:stripe@16. → stripe 16.x (pypi)
+            m = re.match(r"dep:(?:(\w+):)?(.+)@(.+)", c)
+            if m:
+                phrases.append(code(f"{m.group(2)} {m.group(3).rstrip('.')}.x")
+                               + (f" ({esc(m.group(1))})" if m.group(1) else ""))
+        if phrases:
+            scope.append("repos that depend on " + " or ".join(phrases))
+        if rest:
+            scope.append(("or " if phrases else "") + "repos that mention " + _words(rest) + " (including dependency manifests)")
+    return scope
+
+
+def scope_text(r: ChangeRecord) -> str:
+    """One short plain sentence for a scoped record, "" for one that applies to every caller. Long lists of
+    alternatives are cut to the first few and a count; the record page and feed.json carry the full lists."""
+    parts = scope_parts(r, lambda w: f"'{w}'" if '"' in w else f'"{w}"', both=" and ", limit=4)
+    return ("Applies only in " + "; ".join(parts) + ".") if parts else ""
 
 
 def _article_ld(headline: str, description: str, about: str, url: str, modified: str, sources: list[str]) -> dict:
@@ -435,6 +470,350 @@ For a deprecation, the date is the key date the vendor names.</p>
     description = (f"{n} AI model ids from {', '.join(vendors)}, each with its retirement, deprecation or change "
                    "date and what to do." if n else "Retirement and change dates by model id, from the apiwatch feed.")
     return _page("Model retirement and change dates by model id", body, depth=1, description=_clip(description))
+
+
+# ---------- mcp server ----------
+
+LIVE_URL = "https://apiwatch.reignventures.co/"   # where the MCP setup snippets point when no base URL is given
+MCP_PAGE_UPDATED = "2026-10-21"                  # sitemap lastmod: change it when the page text changes
+MCP_TOOLS = [
+    ("check_model", "is this AI model id in the feed, what happens to it and when, and what to do."),
+    ("check_identifiers", "the same lookup for up to 100 model ids, endpoints, tool or field names at once."),
+    ("list_upcoming", "dated changes from today forward, soonest first, optionally for one vendor."),
+    ("search_changes", "text search over record summaries, vendors and signatures."),
+    ("get_record", "one full record by its id."),
+    ("list_watched_mcp_servers", "the public MCP servers apiwatch keeps a change history for, with status and last change."),
+    ("mcp_server_changes", "observed tool changes on one of those servers in the last N days, with flags worth a look."),
+]
+
+
+def _mcp_page(base: str) -> str:
+    url = (base or LIVE_URL) + "mcp"
+    cursor = json.dumps({"mcpServers": {"apiwatch": {"url": url}}}, indent=2)
+    generic = json.dumps({"mcpServers": {"apiwatch": {"type": "http", "url": url}}}, indent=2)
+    tools = "".join(f"<li><code>{name}</code>: {escape(what)}</li>" for name, what in MCP_TOOLS)
+    body = f"""<p class="crumb"><a href="index.html">All changes</a></p>
+<section class="intro">
+<h1>apiwatch MCP server</h1>
+<p class="lede">Lets an AI agent ask, while it works, whether a model id or API it is about to use has a published
+change: what happens, on which date, and what replaces it.</p>
+<p class="meta">Free. No install, no account, no key. Read only.</p>
+</section>
+<h2>URL</h2>
+<pre><code>{escape(url)}</code></pre>
+<p>Streamable HTTP, JSON responses. It speaks the stateless 2026-07-28 protocol and the earlier
+<code>initialize</code> handshake (2025-11-25 and before).</p>
+<h2>What it answers from</h2>
+<p>Only the reviewed records in this feed (<a href="feed.json">feed.json</a>), the same records the site shows. It
+never says more than a record says. A model with no record gets "no record", which is not the same as safe:
+apiwatch tracks only the changes in its feed. Records that apply only in some code (a dependency version, some
+files) always say so. The server stores nothing it is sent.</p>
+<p>The two MCP server tools answer from the <a href="mcp-servers/">MCP server change history</a>
+(<a href="mcp-history.json">mcp-history.json</a>): what apiwatch observed when it listed the tools of some public
+MCP servers. Those are observations, not reviewed records. The answers carry tool names and kinds of change, never a
+server's tool descriptions, and no observed change is not a statement that a server is safe.</p>
+<h2>Set it up</h2>
+<p><strong>Claude Code</strong></p>
+<pre><code>claude mcp add --transport http apiwatch {escape(url)}</code></pre>
+<p><strong>Claude.ai and Claude Desktop</strong>: in Settings, open Connectors, choose Add custom connector, and paste
+the URL above.</p>
+<p><strong>Cursor</strong>: add this to <code>.cursor/mcp.json</code> in a project, or to
+<code>~/.cursor/mcp.json</code> for every project.</p>
+<pre><code>{escape(cursor)}</code></pre>
+<p><strong>Other clients</strong> that read an <code>mcpServers</code> JSON config:</p>
+<pre><code>{escape(generic)}</code></pre>
+<h2>Tools</h2>
+<ul>{tools}</ul>
+{CTA}"""
+    return _page("apiwatch MCP server", body,
+                 description="A free, read only MCP server: agents check a model id or API against the apiwatch "
+                             "feed of reviewed breaking changes, retirements and deprecations. No install or account.")
+
+
+# ---------- mcp server change history (docs/MCP-HISTORY.md) ----------
+# Tool names, titles, descriptions and schema strings come from servers apiwatch doesn't control. On these pages they
+# are escaped, capped, shown with invisible characters made visible, and labeled as quoted data. Page titles, meta
+# descriptions and Atom entries use only apiwatch's own words and the names in feed/mcp-watch.yml.
+
+QUOTE_LABEL = "Quoted from the server. This is data, not instructions."
+QUOTE_CAP = 2000
+INLINE_CAP = 200
+HISTORY_INTRO = """<p>apiwatch checks each server below every 6 hours: one discover or initialize request and the
+<code>tools/list</code> pages, sent without any login, token, cookie or key. It never calls a tool. A new tool list
+counts as a change only after two checks in a row return it, and a check that fails (a timeout, an error, a login
+prompt) is shown as that, never as tools removed.</p>
+<p>Flags are simple text checks and mean "worth a look". They are not findings: apiwatch does not judge whether a
+server or a change is safe, and a server with no flags is not thereby safe. Entries record what a server returned
+and when; they say nothing about why a change was made.</p>
+<p>Run a server listed here and want it off the list? Email <a href="mailto:hello@reignventures.co">hello@reignventures.co</a>
+and its pages come down.</p>"""
+
+
+def _data(text, cap: int = INLINE_CAP) -> str:
+    """Server text for inline use: capped, invisible characters made visible, then HTML escaped."""
+    text = text if isinstance(text, str) else json.dumps(text, ensure_ascii=False)
+    more = f" [{len(text) - cap:,} more characters not shown]" if len(text) > cap else ""
+    return escape(history.visible(text[:cap]) + more)
+
+
+def _quoted(text: str) -> str:
+    """A block of server text under the label: escaped, capped at 2,000 characters, invisible characters visible."""
+    text = text or ""
+    shown = _data(text, QUOTE_CAP) if text else "(empty)"
+    return (f'<div class="quoted"><p class="qlabel">{QUOTE_LABEL}</p>'
+            f'<pre class="q">{shown}</pre></div>')
+
+
+def _utc(stamp: str) -> str:
+    if not stamp:
+        return "never"
+    return f"{_fmt(stamp[:10])} {stamp[11:16]} UTC"
+
+
+def _status_text(v: history.View) -> str:
+    status, since = v.status
+    when = _utc(since)
+    return {
+        "pending_first_check": "First check pending",
+        "ok": "Answering",
+        "needs_login": f"Needs a login since {when}",
+        "not_reachable": f"Not reachable since {when}",
+        "empty_tools": f"Returned an empty tool list since {when}",
+        "failing": f"tools/list failing since {when}",
+    }[status]
+
+
+def _counts_text(c: dict) -> str:
+    return ", ".join(f"{n} {s}" for s, n in c.items()) or "no classified events"
+
+
+def _flag_badges(fl: list[dict]) -> str:
+    return " ".join(f'<span class="badge hflag">{escape(history.FLAG_TEXT.get(f, f))}</span>'
+                    for f in sorted({x["flag"] for x in fl}))
+
+
+def _mcp_history_pages(out: Path, views: list, base: str, today: date) -> None:
+    d = out / "mcp-servers"
+    d.mkdir(exist_ok=True)
+    feed_link = (f'<link rel="alternate" type="application/atom+xml" title="{SITE_TITLE}: MCP server changes" '
+                 'href="feed.xml">\n')
+    (d / "index.html").write_text(_canonical(_page(
+        "MCP server change history", _history_index(views, today), depth=1,
+        description="A dated record of observed changes to the tools that popular public MCP servers list: tools "
+                    "removed or renamed, new required parameters, rewritten descriptions, changed hints.",
+        head=feed_link), base, "mcp-servers/"))
+    (d / "feed.xml").write_text(_history_atom(views, base, today))
+    for v in views:
+        sd = d / v.server.slug
+        sd.mkdir(exist_ok=True)
+        (sd / "index.html").write_text(_canonical(_page(
+            f"{v.server.name} MCP server tool changes", _history_server(v, today), depth=2,
+            description=f"Observed changes to the tools the {v.server.name} MCP server lists at {v.server.url}, "
+                        "checked by apiwatch without credentials.",
+            head=feed_link), base, f"mcp-servers/{v.server.slug}/"))
+        (sd / "feed.xml").write_text(_history_atom([v], base, today, one=True))
+    (out / "mcp-history.json").write_text(json.dumps(history.public_data(views, base, today), indent=1) + "\n")
+
+
+def _history_index(views: list, today: date) -> str:
+    rows = []
+    for v in views:
+        status, _ = v.status
+        changes = v.changes
+        bits = []
+        if v.current:
+            bits.append(f'{v.current["tool_count"]} tools now' if status == "ok"
+                        else f'{v.current["tool_count"]} tools at the last good check')
+        bits.append(f"last checked {_utc(v.state.get('last_run', ''))}" if v.state.get("last_run") else "not checked yet")
+        if changes:
+            bits.append(f"last change {_fmt(changes[-1]['date'])}")
+        elif v.current:
+            bits.append("no change observed yet")
+        fl = v.open_flags(today)
+        flags_html = f'<p class="meta">Flags, last {history.OPEN_FLAG_DAYS} days: {_flag_badges(fl)}</p>' if fl else ""
+        rows.append(f'<li class="srv" data-status="{status}"><div><a class="vendor" href="{v.server.slug}/">'
+                    f'{escape(v.server.name)}</a> <span class="badge st-{status}">{escape(_status_text(v))}</span></div>'
+                    f'<div class="meta"><code>{escape(v.server.url)}</code></div>'
+                    f'<div class="meta">{" · ".join(bits)}</div>{flags_html}</li>')
+    listing = f'<ul class="servers">{"".join(rows)}</ul>' if rows else "<p>No servers are watched yet.</p>"
+    return f"""<p class="crumb"><a href="../index.html">All changes</a></p>
+<section class="intro">
+<h1>MCP server change history</h1>
+<p class="lede">What popular public MCP servers changed in the tools they list, and when: tools removed or renamed,
+new required parameters, rewritten descriptions, changed hints.</p>
+<p class="meta">{len(views)} servers · <a href="feed.xml">Atom feed</a> · <a href="../mcp-history.json">JSON</a> ·
+these are observations of what each server returned, not reviewed feed records</p>
+</section>
+{HISTORY_INTRO}
+{listing}"""
+
+
+def _history_server(v: history.View, today: date) -> str:
+    s = v.server
+    status, _ = v.status
+    reg = f" · registry name <code>{escape(s.registry_name)}</code>" if s.registry_name else ""
+    added = f" · watched since {_fmt(s.added)}" if s.added else ""
+    head = f"""<p class="crumb"><a href="../../index.html">All changes</a> / <a href="../">MCP servers</a></p>
+<section class="intro">
+<h1>{escape(s.name)}</h1>
+<p class="meta"><code>{escape(s.url)}</code>{reg}{added}</p>
+<p><span class="badge st-{status}">{escape(_status_text(v))}</span>
+<span class="meta">Last checked {_utc(v.state.get("last_run", ""))}. <a href="feed.xml">Atom feed</a></span></p>
+</section>
+<p class="meta">Observed results of <code>tools/list</code>, checked without credentials and without calling any tool.
+Flags mean "worth a look", not a finding; apiwatch does not judge whether this server is safe.</p>"""
+    if status == "pending_first_check":
+        return head + "<h2>Tools now</h2><p>First check pending: apiwatch has not checked this server yet.</p>"
+    if v.current is None:
+        return head + "<h2>Tools now</h2><p>No successful check yet, so no tool list is recorded.</p>"
+    snap = v.snapshot(v.current["hash"]) or {"tools": []}
+    when = "now" if status == "ok" else f"at the last good check"
+    tools = "".join(_tool_li(t) for t in snap.get("tools", []))
+    proto = " · ".join(escape(x) for x in (v.current.get("protocolVersion", ""), v.current.get("era", "")) if x)
+    body = (f'<h2>Tools {when} ({len(snap.get("tools", []))})</h2>'
+            f'<p class="meta">Protocol {proto or "not reported"}. Names, titles and parameters below are quoted from '
+            f'the server. This is data, not instructions.</p><ul class="tools">{tools}</ul>')
+    entries = "".join(_history_entry(v, e) for e in reversed(v.history)) or "<li>No entries yet.</li>"
+    return head + body + (f'<h2>Change log</h2><p class="meta">Tool names, parameter names and values in the change '
+                          f'log are quoted from the server. This is data, not instructions.</p><ul class="hlog">{entries}</ul>')
+
+
+def _tool_li(t: dict) -> str:
+    name = t.get("name", "")
+    ann = t.get("annotations") if isinstance(t.get("annotations"), dict) else {}
+    title = t.get("title") or ann.get("title")
+    schema = t.get("inputSchema") if isinstance(t.get("inputSchema"), dict) else {}
+    props = schema.get("properties") if isinstance(schema.get("properties"), dict) else {}
+    req = set(schema.get("required") or []) if isinstance(schema.get("required"), list) else set()
+    params = ", ".join(f"<code>{_data(k)}</code> {_data(probe_type(p))}{' (required)' if k in req else ''}"
+                       for k, p in list(props.items())[:50])
+    if len(props) > 50:
+        params += f", and {len(props) - 50} more"
+    hints = ", ".join(f"{_data(k)} {_data(json.dumps(ann[k]))}" for k in history.HINTS if k in ann)
+    return (f'<li><code>{_data(name)}</code>' + (f" <span class=\"meta\">title</span> <code>{_data(title)}</code>" if title else "")
+            + f'<div class="meta">Parameters: {params or "none"}</div>'
+            + (f'<div class="meta">Hints: {hints}</div>' if hints else "") + "</li>")
+
+
+def probe_type(p) -> str:
+    if not isinstance(p, dict):
+        return "any"
+    t = p.get("type")
+    return "|".join(sorted(map(str, t))) if isinstance(t, list) else str(t or "any")
+
+
+def _history_entry(v: history.View, e: dict) -> str:
+    day = f'<time datetime="{escape(e["date"])}">{_fmt(e["date"])}</time>'
+    if e["kind"] == "first_seen":
+        fl = e.get("flags", [])
+        return (f'<li>{day} <strong>First check</strong>: {e.get("tool_count", 0)} tools.'
+                + (_flags_block(fl) if fl else "") + "</li>")
+    if e["kind"] == "unstable":
+        hs = " and ".join(f"<code>{escape(h[:12])}</code>" for h in e.get("hashes", []))
+        return (f"<li>{day} <strong>Unstable</strong>: the server went back and forth between two tool lists ({hs}), "
+                "for example while a new version rolls out. A list counts as a change only when two checks in a row "
+                "return it; any change that met that bar is listed on its own.</li>")
+    events = sorted(e.get("events", []), key=lambda x: (ORDER_ASC.get(x["severity"], 9), x.get("path", "")))
+    old, new = v.snapshot(e["from"]), v.snapshot(e["to"])
+    items = "".join(_event_li(x, old, new) for x in events) or "<li>No classified events.</li>"
+    seen = f'first seen {_utc(e.get("first_seen_at", ""))}, confirmed {_utc(e.get("confirmed_at", ""))}'
+    return (f'<li>{day} <strong>{escape(_counts_text(history.counts(e.get("events", []))))}</strong> '
+            f'<span class="meta">({seen})</span><ul class="events">{items}</ul>'
+            + (_flags_block(e.get("flags", [])) if e.get("flags") else "") + "</li>")
+
+
+ORDER_ASC = {"breaking": 0, "silent": 1, "deprecation": 2, "additive": 3, "info": 4}
+
+
+def _text_of(snap: dict | None, x: dict) -> str:
+    """The description or title an event refers to, from a stored snapshot ("" if not stored)."""
+    t = next((t for t in (snap or {}).get("tools", []) if t.get("name") == x.get("tool")), None) or {}
+    if x["type"] == "annotation_changed":
+        t = t.get("annotations") if isinstance(t.get("annotations"), dict) else {}
+    v = t.get("description" if x["type"] == "description_changed" else "title")
+    return v if isinstance(v, str) else ""
+
+
+def _event_li(x: dict, old: dict | None, new: dict | None) -> str:
+    sev = x["severity"]
+    tool = x.get("tool", "")
+    rest = x.get("path", "")[len(f"tool:{tool}"):] if tool else x.get("path", "")
+    what = f"<code>{_data(tool)}</code>" if tool else ""
+    if rest and tool:
+        what += f" <code>{_data(rest.lstrip('.'))}</code>"
+    elif rest:
+        what = f"<code>{_data(rest)}</code>"
+    detail = ""
+    if "old_sha256" in x:   # description or title text: quoted from the snapshots, never stored in the event
+        detail = (f'<details><summary>Before and after ({x.get("old_len", 0):,} to {x.get("new_len", 0):,} characters)'
+                  f'</summary><p class="meta">Before</p>{_quoted(_text_of(old, x))}'
+                  f'<p class="meta">After</p>{_quoted(_text_of(new, x))}</details>')
+    elif not (rest == "" and x["type"] in ("removed", "added")):   # a whole tool removed or added: the name says it
+        parts = [f"{label} <code>{_data(x[k])}</code>" for k, label in (("before", "was"), ("after", "now"))
+                 if x.get(k) is not None]
+        if parts:
+            detail = f' <span class="meta">{", ".join(parts)}</span>'
+    return (f'<li><span class="badge sev-{escape(sev)}">{SEV_LABEL.get(sev, escape(sev))}</span> '
+            f"{escape(history.event_phrase(x))}: {what}{detail}</li>")
+
+
+def _flags_block(fl: list[dict]) -> str:
+    items = "".join(f'<li><span class="badge hflag">{escape(history.FLAG_TEXT.get(f["flag"], f["flag"]))}</span> '
+                    f'<code>{_data(f.get("tool", ""))}</code>'
+                    + (f' <span class="meta">{escape(f["detail"])}</span>' if f.get("detail") else "") + "</li>"
+                    for f in fl)
+    return f'<p class="meta">Flags (worth a look, not findings):</p><ul class="flags">{items}</ul>'
+
+
+def _history_atom(views: list, base: str, today: date, one: bool = False) -> str:
+    entries = []
+    for v in views:
+        s = v.server
+        link = f'<link href="{xesc(base)}mcp-servers/{xesc(s.slug)}/"/>' if base else ""
+        for e in v.history:
+            if e["kind"] == "change":
+                title = f"{s.name}: {_counts_text(history.counts(e.get('events', [])))}"
+                key = e["to"][:12]
+            elif e["kind"] == "first_seen":
+                title, key = f"{s.name}: first check, {e.get('tool_count', 0)} tools", "first"
+            else:
+                title, key = f"{s.name}: alternating between two tool lists", "unstable-" + "-".join(h[:12] for h in e.get("hashes", []))
+            n_flags = len({f["flag"] for f in e.get("flags", [])})
+            if n_flags:
+                title += f" ({n_flags} flag{'s' if n_flags != 1 else ''})"
+            entries.append((e["date"], f"""<entry>
+<id>urn:apiwatch:mcp:{xesc(s.slug)}:{xesc(e['date'])}:{xesc(key)}</id>
+<title>{xesc(title)}</title>
+{link}
+<updated>{e['date']}T00:00:00Z</updated>
+<summary>{xesc(f"Observed change in the tools/list result of the {s.name} MCP server ({s.url}). Details on the page.")}</summary>
+</entry>"""))
+    entries.sort(key=lambda x: x[0], reverse=True)
+    if one:
+        s = views[0].server
+        feed_id, title, path = f"urn:apiwatch:mcp:{s.slug}", f"{SITE_TITLE}: {s.name} MCP server changes", f"mcp-servers/{s.slug}/"
+    else:
+        feed_id, title, path = "urn:apiwatch:mcp", f"{SITE_TITLE}: MCP server changes", "mcp-servers/"
+    links = (f'<link rel="self" href="{xesc(base + path)}feed.xml"/>\n<link rel="alternate" type="text/html" '
+             f'href="{xesc(base + path)}"/>') if base else ""
+    return f"""<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+<id>{feed_id}</id>
+<title>{xesc(title)}</title>
+<subtitle>Observed changes to the tools public MCP servers list, checked by apiwatch without credentials.</subtitle>
+{links}
+<updated>{today.isoformat()}T00:00:00Z</updated>
+<author><name>{SITE_TITLE}</name></author>
+{"".join(x for _, x in entries)}
+</feed>
+"""
+
+
+def _mcp_history_urls(views: list, base: str, today: date) -> list[tuple[str, str]]:
+    def last(v):
+        return max([e["date"] for e in v.history] + [v.server.added or today.isoformat()])
+    urls = [(f"{base}mcp-servers/", max([last(v) for v in views], default=today.isoformat()))]
+    return urls + [(f"{base}mcp-servers/{v.server.slug}/", last(v)) for v in views]
 
 
 # ---------- pro ----------
@@ -638,7 +1017,11 @@ def _json_feed(recs, base) -> str:
             "date_published": f"{r.effective}T00:00:00Z",
             "tags": [r.vendor, r.kind, r.severity],
             **({"external_url": r.source_url} if r.source_url.startswith(("https://", "http://")) else {}),
-            "_apiwatch": {"severity": r.severity, "kind": r.kind, "surface": r.surface, "effective": r.effective,
+            "_apiwatch": {"id": r.id, "vendor": r.vendor, "summary": r.summary, "detail": r.detail,
+                          "fix_hint": r.fix_hint, "source_url": r.source_url, "scope": scope_text(r),
+                          # ids and -suffixes the record's text names, which the scanner counts as the record's
+                          "named": sorted(record_names(" ".join([r.summary, r.detail, r.surface]))) if r.kind == "model" else [],
+                          "severity": r.severity, "kind": r.kind, "surface": r.surface, "effective": r.effective,
                           "signatures": r.signatures, "exclude": r.exclude, "context": r.context,
                           "files": r.files, "repo_context": r.repo_context, "verified": r.verified,
                           "verified_by": r.verified_by, "verified_on": r.verified_on,
@@ -745,12 +1128,26 @@ h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 .vendors a span { color: var(--muted); margin-left: 4px; }
 .flag { background: var(--flag-bg); border: 1px solid var(--flag-line); border-radius: 8px; padding: 12px 14px; margin: 16px 0; }
 .sevnote { color: var(--muted); }
+.servers, .hlog { list-style: none; padding: 0; margin: 16px 0 0; border-top: 1px solid var(--line); }
+.servers > li, .hlog > li { padding: 12px 0; border-bottom: 1px solid var(--line); min-width: 0; overflow-wrap: anywhere; }
+.tools { padding-left: 20px; }
+.tools li, .events li, .flags li { margin: 6px 0; overflow-wrap: anywhere; }
+.events, .flags { padding-left: 20px; margin: 6px 0; }
+.hflag { color: var(--silent); border-color: currentColor; }
+.st-ok { color: var(--additive); border-color: currentColor; }
+.st-needs_login, .st-not_reachable, .st-empty_tools, .st-failing { color: var(--silent); border-color: currentColor; }
+.quoted { border-left: 3px solid var(--flag-line); padding: 4px 0 4px 10px; margin: 8px 0; }
+.qlabel { color: var(--muted); font-size: 13px; margin: 0 0 4px; }
+pre.q { white-space: pre-wrap; overflow-wrap: anywhere; font: 13px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; }
+details summary { cursor: pointer; color: var(--link); }
 .sigs code { display: inline-block; margin: 0 6px 6px 0; }
 .idrecs { list-style: none; padding: 0; margin: 16px 0 0; }
 .idrecs li { border-top: 1px solid var(--line); padding: 8px 0; }
 .idrecs p { margin: 4px 0; }
 .idlist { list-style: none; padding: 0; margin: 0; columns: 2 280px; column-gap: 24px; }
 .idlist li { padding: 3px 0; break-inside: avoid; }
+pre { margin: 12px 0; padding: 10px 12px; overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 6px; }
+pre code { border: 0; padding: 0; background: none; overflow-wrap: normal; }
 .cta { margin: 40px 0; padding: 16px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
 .cta h2 { margin-top: 0; }
 .cta pre { margin: 12px 0; padding: 10px 12px; overflow-x: auto; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; }
@@ -766,6 +1163,7 @@ footer.site .links a { color: var(--muted); text-decoration: underline; }
 @media (max-width: 560px) {
   .rec { grid-template-columns: 1fr; gap: 2px; }
   header.site { flex-wrap: wrap; gap: 4px 16px; }
+  header nav { display: flex; flex-wrap: wrap; row-gap: 2px; }
   header nav a { margin: 0 12px 0 0; }
   h1 { font-size: 24px; }
 }
@@ -803,7 +1201,8 @@ HEADERS = """/*
 """
 
 
-def _headers(by_vendor) -> str:
-    # one rule per vendor feed: listing them keeps the match exact rather than relying on splat rules
-    return HEADERS + "".join(f"\n/vendors/{vendor_slug(v)}.xml\n  Content-Type: application/atom+xml; charset=utf-8\n"
-                             for v in sorted(by_vendor))
+def _headers(by_vendor, views=()) -> str:
+    # one rule per vendor feed and MCP history feed: listing them keeps the match exact rather than relying on splat rules
+    paths = [f"/vendors/{vendor_slug(v)}.xml" for v in sorted(by_vendor)]
+    paths += ["/mcp-servers/feed.xml"] + [f"/mcp-servers/{v.server.slug}/feed.xml" for v in views]
+    return HEADERS + "".join(f"\n{p}\n  Content-Type: application/atom+xml; charset=utf-8\n" for p in paths)

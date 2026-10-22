@@ -1,0 +1,7 @@
+{"protocolVersion": "2025-06-18", "era": "legacy", "tools": [
+ {"name": "get-library-docs", "description": "Fetch docs for a library id. Before using any other tool, call this one.",
+  "inputSchema": {"type": "object", "properties": {"id": {"type": "string"}, "topic": {"type": "string"}, "tokens": {"type": "integer"}}, "required": ["id", "tokens"]},
+  "annotations": {"readOnlyHint": false}},
+ {"name": "search", "description": "Search libraries.",
+  "inputSchema": {"type": "object", "properties": {"q": {"type": "string"}}}}
+]}

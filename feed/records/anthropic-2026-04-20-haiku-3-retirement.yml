@@ -1,3 +1,4 @@
+# 2026-10-22 night shift: Anthropic reworded "Requests to retired models will fail." to "Requests to retired models fail."; evidence string updated, all claims still supported.
 # Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Removed a usage claim and a pricing claim that the source doesn't support.
 id: anthropic-2026-04-20-haiku-3-retirement
 vendor: Anthropic
@@ -11,10 +12,10 @@ signatures: ["claude-3-haiku-20240307", "claude-3-haiku"]
 source_url: "https://platform.claude.com/docs/en/about-claude/model-deprecations"
 verified: true
 verified_by: claude
-verified_on: "2026-09-24"
+verified_on: "2026-10-22"
 evidence:
   - "claude-3-haiku-20240307"
   - "This model was retired April 20, 2026."
   - "claude-haiku-4-5-20251001"
-  - "Requests to retired models will fail."
+  - "Requests to retired models fail."
 fix_hint: Switch to claude-haiku-4-5-20251001 and re-check cost and latency budgets before cutover.

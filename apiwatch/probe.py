@@ -134,6 +134,15 @@ def mcp_tool_drift(endpoint_id: str, before_tools: list[dict], after_tools: list
             # agents pick tools by description, so a rewrite can change which tool gets called
             events.append(DriftEvent(endpoint_id, f"tool:{name}.description", "description_changed",
                                      bt.get("description"), at.get("description"), "info"))
+        if (bt.get("title") or "") != (at.get("title") or ""):
+            events.append(DriftEvent(endpoint_id, f"tool:{name}.title", "title_changed", bt.get("title"), at.get("title"), "info"))
+        # hints like readOnlyHint are advisory, so a change is info; history.py flags the ones that widen what a tool may do
+        ba = bt.get("annotations") if isinstance(bt.get("annotations"), dict) else {}
+        aa = at.get("annotations") if isinstance(at.get("annotations"), dict) else {}
+        for k in sorted(ba.keys() | aa.keys()):
+            if ba.get(k) != aa.get(k):
+                events.append(DriftEvent(endpoint_id, f"tool:{name}.annotations.{k}", "annotation_changed",
+                                         ba.get(k), aa.get(k), "info"))
     return events
 
 

@@ -1,11 +1,12 @@
 """Terms of Service and Privacy Policy for apiwatch (the feed site, the free Action and CLI, and apiwatch Pro).
 
 Plain HTML bodies for site.py. Every statement about data has to match what the code and the operations
-actually do (docs/PRO.md); change this file when they change, and bump UPDATED.
+actually do (docs/PRO.md); change this file when they change, and bump the changed policy's date.
 """
 from __future__ import annotations
 
-UPDATED = "October 8, 2026"
+UPDATED = "October 8, 2026"            # Terms
+PRIVACY_UPDATED = "October 21, 2026"   # Privacy Policy
 EMAIL = "hello@reignventures.co"
 
 TERMS = f"""<article class="legal">
@@ -90,7 +91,7 @@ Any dispute will be handled in the state or federal courts located in Virginia.<
 PRIVACY = f"""<article class="legal">
 <p class="crumb"><a href="index.html">apiwatch</a> / Privacy</p>
 <h1>Privacy Policy</h1>
-<p class="meta">Last updated {UPDATED}</p>
+<p class="meta">Last updated {PRIVACY_UPDATED}</p>
 
 <p>This policy explains what information apiwatch handles and why. apiwatch is run by Reign Ventures LLC, a Virginia
 limited liability company. The short version: the website doesn't track you, the free tools run in your CI or on your
@@ -99,7 +100,7 @@ computer and send us nothing, and Pro reads your code only to scan it and doesn'
 <h2>The website</h2>
 <p>apiwatch.reignventures.co uses no cookies, no analytics and no third-party scripts. It is hosted by Cloudflare,
 which processes standard request information such as IP addresses, and browser network error reports, to deliver the
-site and protect it from abuse.</p>
+site and protect it from abuse. The MCP server at /mcp answers from the public feed and stores nothing it is sent.</p>
 
 <h2>The free GitHub Action and command line tool</h2>
 <p>They run in your own CI or on your own computer. The scan itself makes no network calls. The Action uses your

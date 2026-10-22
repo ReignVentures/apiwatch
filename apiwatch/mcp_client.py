@@ -23,6 +23,8 @@ import urllib.error
 import urllib.request
 from typing import Any
 
+from . import __version__
+
 MODERN_VERSION = "2026-07-28"
 LEGACY_VERSION = "2025-11-25"   # newest handshake-era revision; servers negotiate down from it
 CLIENT_INFO = {"name": "apiwatch", "version": "0.1.0"}
@@ -241,7 +243,9 @@ class _HttpSession:
 
     def _post(self, msg: dict, version: str | None, timeout: float | None):
         method = msg.get("method")
-        h = {"Content-Type": "application/json", "Accept": "application/json, text/event-stream", **self.headers}
+        # an explicit User-Agent: some Cloudflare zones (ours included) block urllib's default "Python-urllib"
+        h = {"Content-Type": "application/json", "Accept": "application/json, text/event-stream",
+             "User-Agent": f"apiwatch/{__version__}", **self.headers}
         if version:
             h["MCP-Protocol-Version"] = version
             if version >= MODERN_VERSION:

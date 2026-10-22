@@ -153,7 +153,7 @@ def test_canonical_urls_sitemap_and_robots(tmp_path):
     ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     locs = [e.text for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url/s:loc", ns)]
     assert "https://feed.example.com/records/acme-2026-10-01-soon" in locs and "https://feed.example.com/vendors/beta-mcp" in locs
-    assert not any("draft" in u or "demo" in u for u in locs) and len(locs) == 1 + 1 + 1 + 1 + 2 + 3   # index, upcoming, pro, ids
+    assert not any("draft" in u or "demo" in u for u in locs) and len(locs) == 1 + 1 + 1 + 1 + 1 + 1 + 2 + 3   # index, upcoming, pro, mcp-server, ids, mcp-servers
     assert "https://feed.example.com/upcoming" in locs and "https://feed.example.com/ids/" in locs
     assert "Sitemap: https://feed.example.com/sitemap.xml" in (out / "robots.txt").read_text()
 
@@ -170,7 +170,9 @@ def test_every_page_has_the_ci_next_step(tmp_path):
     out = tmp_path / "site"
     pages = [out / "index.html", out / "vendors" / "acme.html", out / "records" / "acme-2026-10-01-soon.html"]
     for page in out.rglob("*.html"):
-        if page.name not in ("404.html", "terms.html", "privacy.html") and page.parent.name != "pro":   # legal, Pro: no CTA
+        # legal, Pro, and the MCP server history (observations, not feed records): no CTA
+        if page.name not in ("404.html", "terms.html", "privacy.html") and page.parent.name != "pro" \
+                and "mcp-servers" not in page.parts:
             assert page.read_text().count('<aside class="cta"') == 1, page
     for page in pages:
         html = page.read_text()

@@ -1,3 +1,4 @@
+# 2026-10-22 night shift: the entry (CHANGE-3452) fell off page 1 of the paginated changelog; evidence now comes from the changelog's data feed (dac-changelogs), where the date is the field "2026-09-22". All claims still supported.
 # Independent review (docs/REVIEW.md) on 2026-09-24: fixed. Removed an unsupported claim about how agents react. Atlassian files the entry under "Fixed"; it's still breaking, because it is a rename with no alias.
 id: atlassian-2026-09-22-mcp-assignable-users-rename
 vendor: Atlassian Rovo MCP
@@ -11,11 +12,11 @@ signatures: ["findJiraIssueAssignableUsers"]
 source_url: "https://developer.atlassian.com/cloud/rovo-mcp/changelog/"
 verified: true
 verified_by: claude
-verified_on: "2026-09-24"
+verified_on: "2026-10-22"
 evidence:
-  - "22 September 2026"
-  - "findJiraIssueAssignableUsers"
-  - "listJiraIssueAssignableUsers"
-  - "The tool has now been renamed to"
-  - "read_jira"
+  - {url: "https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3452", text: "2026-09-22"}
+  - {url: "https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3452", text: "findJiraIssueAssignableUsers"}
+  - {url: "https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3452", text: "listJiraIssueAssignableUsers"}
+  - {url: "https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3452", text: "The tool has now been renamed to"}
+  - {url: "https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3452", text: "read_jira"}
 fix_hint: Use listJiraIssueAssignableUsers; read tools/list at startup and fail loudly when a tool the agent depends on is missing.

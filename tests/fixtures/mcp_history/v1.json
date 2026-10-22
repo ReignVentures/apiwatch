@@ -1,0 +1,8 @@
+{"protocolVersion": "2025-06-18", "era": "legacy", "tools": [
+ {"name": "resolve-library-id", "title": "Resolve library", "description": "Find a library id for a package name.",
+  "inputSchema": {"type": "object", "properties": {"libraryName": {"type": "string"}}, "required": ["libraryName"]},
+  "annotations": {"readOnlyHint": true, "openWorldHint": false}},
+ {"name": "get-library-docs", "description": "Fetch docs for a library id.",
+  "inputSchema": {"type": "object", "properties": {"id": {"type": "string"}, "topic": {"type": "string"}}, "required": ["id"]},
+  "annotations": {"readOnlyHint": true}}
+]}

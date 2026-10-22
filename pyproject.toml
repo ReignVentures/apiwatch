@@ -20,5 +20,8 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 include = ["apiwatch*"]
 
+[tool.setuptools.package-data]
+apiwatch = ["*.js"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

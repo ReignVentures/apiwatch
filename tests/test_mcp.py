@@ -261,3 +261,49 @@ def test_combinator_changes_are_reported_not_ignored():
     k = kinds(probe.mcp_tool_drift("d", [_tool("s", b)], [_tool("s", a)]))
     assert ("tool:s.input.q", "combinator_changed", "silent") in k
     assert probe.mcp_tool_drift("d", [_tool("s", b)], [_tool("s", b)]) == []
+
+
+def test_http_client_sends_an_apiwatch_user_agent(monkeypatch):
+    """Cloudflare zones (ours included) block urllib's default "Python-urllib" User-Agent; --header still overrides."""
+    import io
+    import urllib.request
+    from apiwatch import __version__, mcp_client
+
+    seen = []
+
+    class Resp(io.BytesIO):
+        headers = {"Content-Type": "application/json"}
+        status = 200
+        def getheader(self, name, default=None):
+            return self.headers.get(name, default)
+        def __enter__(self):
+            return self
+        def __exit__(self, *a):
+            return False
+
+    def fake_urlopen(req, timeout=None):
+        seen.append(dict(req.header_items()))
+        return Resp(b'{"jsonrpc":"2.0","id":1,"result":{}}')
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    for headers, want in (({}, f"apiwatch/{__version__}"), ({"User-Agent": "custom/1"}, "custom/1")):
+        seen.clear()
+        try:
+            mcp_client._HttpSession("https://example.test/mcp", headers, 5)._post(
+                {"jsonrpc": "2.0", "id": 1, "method": "ping"}, None, None)
+        except Exception:
+            pass      # only the request headers matter here
+        assert seen and seen[0].get("User-agent") == want, seen
+
+
+def test_title_and_annotation_changes_are_info_events():
+    before = [{"name": "t", "title": "Old", "inputSchema": {"type": "object"},
+               "annotations": {"readOnlyHint": True, "openWorldHint": False}}]
+    after = [{"name": "t", "title": "New", "inputSchema": {"type": "object"},
+              "annotations": {"openWorldHint": True, "destructiveHint": False}}]
+    assert kinds(probe.mcp_tool_drift("x", before, after)) == {
+        ("tool:t.title", "title_changed", "info"),
+        ("tool:t.annotations.readOnlyHint", "annotation_changed", "info"),
+        ("tool:t.annotations.openWorldHint", "annotation_changed", "info"),
+        ("tool:t.annotations.destructiveHint", "annotation_changed", "info")}
+    assert probe.mcp_tool_drift("x", before, before) == []
