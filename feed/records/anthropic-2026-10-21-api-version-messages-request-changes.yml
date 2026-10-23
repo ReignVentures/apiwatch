@@ -1,0 +1,69 @@
+# Promoted from feed/drafts after independent review (docs/REVIEW.md) on 2026-10-23: fix. First evidence string now names the three
+# parameters; header corrected (repo_context AND groups are repo-wide, not per file). Scan tests by the reviewer hit Python 2.x, TS 1.x,
+# PHP, Ruby lockfile, raw 2026-10-21 requests and the Go/Java/C# gates, and missed 1.x/0.x/2023-06-01 and YAML configs.
+# Authored 2026-10-23 by an author agent from lead #36 (GitHub issue), using only
+# the migration guide (Markdown twin of /docs/en/api/migration-2026-10-21) and the October 21, 2026 release note.
+# Covers: Messages API request changes in API version 2026-10-21 (temperature/top_p/top_k, document blocks in assistant messages,
+# citations in user messages), which also apply to token counting and Message Batches.
+# Opt-in: it bites only when a project sends anthropic-version 2026-10-21, i.e. sets the header itself or moves to the new SDK
+# majors (Python 2.0.0, TypeScript 1.0.0, Go v2, Java 3.0.0, C# 13.0.0, PHP 1.0.0, Ruby 2.0.0, ant CLI 2.0.0), which send it by default.
+# repo_context gates on those majors (canonical dep: forms where deps.py parses the ecosystem; literal Gradle/.csproj/go forms for
+# Java, C# and Go module paths) or on the repo mentioning both anthropic-version and 2026-10-21 (repo-wide AND, not per file). Maven pom.xml (artifact and version on
+# separate lines) and a Gemfile without a lockfile are missed.
+# Signatures: quoted keys ("temperature" etc.: raw JSON bodies, Python dicts and extra_body) and key: forms (TypeScript/JS objects,
+# Ruby/PHP named arguments). Python temperature=/top_p=/top_k= keyword forms are left to anthropic-2026-08-20-python-sdk-v1-removals
+# (already a TypeError since v1). Go/Java/C# field and builder forms (Temperature:, .temperature(), Temperature =) are not matched:
+# the guide doesn't show them. Document-in-assistant and citations-in-user are detail/fix_hint only (no specific identifier).
+# context: the file must mention anthropic and a Messages call form or path, so a YAML config with temperature: is not flagged.
+# Known limit: a multi-provider file that calls both Anthropic messages.create and another vendor with temperature: is flagged too.
+# Not covered here (see the guide's "SDK and CLI changes"): MessageParam split by role, one-value enums as constants, removed
+# tool-runner compaction (TS/Ruby), Text Completions removal (TS/Go/Java/Ruby/CLI), betas on non-beta Models methods,
+# Authorization: Bearer instead of X-Api-Key, one credential per client, per-SDK changes, Apache 2.0 licence.
+id: anthropic-2026-10-21-api-version-messages-request-changes
+vendor: Anthropic
+surface: Claude API version 2026-10-21 (opt-in; default in the new SDK majors) — Messages API, token counting and Message Batches requests
+kind: rest
+severity: breaking
+effective: '2026-10-21'
+summary: On API version 2026-10-21, released October 21, 2026 and sent by default by the new SDK majors, Messages requests that send temperature, top_p or top_k, a document block directly in an assistant message, or citations on text blocks in user messages return a 400 error
+detail: 'Opt-in: requests on 2023-06-01 are unchanged; the change applies once a project sets anthropic-version: 2026-10-21 or upgrades to Python SDK 2.0.0, TypeScript SDK 1.0.0, Go SDK v2, Java SDK 3.0.0, C# SDK 13.0.0, PHP SDK 1.0.0, Ruby SDK 2.0.0 or ant CLI 2.0.0, which send 2026-10-21 by default (their Bedrock and Google Cloud clients too). It covers POST /v1/messages, token counting and each request in a Message Batch created with 2026-10-21. temperature, top_p and top_k return a 400 even at their default values, and the new SDKs and CLI no longer have the three parameters; without them a request samples with the defaults (temperature 1.0), so a request that lowered temperature on a model that accepts other values (such as Claude Sonnet 4.6) loses that effect, and nothing replaces it. A document block placed directly in an assistant message returns a 400 (a document nested in another block, such as a web fetch tool result, is still accepted). A text block with a non-empty citations array in a user message, including inside search_result blocks, returns a 400; citations on assistant text blocks and the "citations": {"enabled": true} setting on documents and search results are still accepted. On Amazon Bedrock, 2026-10-21 is available only for Claude 4.7 and later models.'
+signatures:
+- '"temperature"'
+- '"top_p"'
+- '"top_k"'
+- 'temperature:'
+- 'top_p:'
+- 'top_k:'
+context:
+- [anthropic, messages.create]
+- [anthropic, messages.stream]
+- [anthropic, messages->create]
+- [anthropic, /v1/messages]
+- [anthropic, count_tokens]
+- [anthropic, countTokens]
+- [anthropic, batches.create]
+- [anthropic, toolRunner]
+- [anthropic, tool_runner]
+repo_context:
+- dep:pypi:anthropic@2.
+- dep:npm:@anthropic-ai/sdk@1.
+- dep:rubygems:anthropic@2.
+- dep:packagist:anthropic-ai/sdk@1.
+- anthropic-sdk-go/v2
+- anthropic-cli/v2
+- com.anthropic:anthropic-java:3.
+- include="anthropic" version="13.
+- [anthropic-version, '2026-10-21']
+source_url: https://platform.claude.com/docs/en/api/migration-2026-10-21.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-23'
+evidence:
+- sends `temperature`, `top_p`, or `top_k` returns a 400 error
+- a non-empty `citations` array in a `user` message
+- places a `document` block directly in an `assistant` message
+- url: https://platform.claude.com/docs/en/release-notes/overview.md
+  text: We've released API version `2026-10-21`
+- url: https://platform.claude.com/docs/en/release-notes/overview.md
+  text: October 21, 2026
+fix_hint: 'Before moving to 2026-10-21 (or the new SDK major): remove temperature, top_p and top_k from Messages, token-counting and batch requests, including any extra_body or raw JSON that still sends them; a request that needs a non-default value can stay on 2023-06-01, since nothing replaces it on 2026-10-21. Move document blocks out of assistant messages into user messages. Remove citations from text blocks (and search_result content) in user messages; assistant citations and "citations": {"enabled": true} can stay. On Bedrock, switch a call to a Claude 4.7 or later model before moving it to 2026-10-21, or keep the version it sends today. Release the upgrade together with these fixes.'

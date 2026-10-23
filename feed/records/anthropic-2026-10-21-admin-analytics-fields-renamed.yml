@@ -1,0 +1,101 @@
+# Promoted from feed/drafts after independent review (docs/REVIEW.md) on 2026-10-23: fix. detail no longer claims the SDK types drop
+# the old names or that 2023-06-01 responses are unchanged (the guide says neither); Go 2.0.0 as the source writes it. Added SDK resource
+# names from the API reference pages to context, actor["email"]-style signatures, and excludes for reads of the new scope field.
+# Known false positive (docs/GAPS.md): workspace rate-limit items still carry a real workspace_id, which is flagged in those files.
+# Authored 2026-10-23 by an author agent from lead #36 (GitHub issue), using only
+# the migration guide (Markdown twin of /docs/en/api/migration-2026-10-21), the endpoint reference pages it links (for paths), and the
+# October 21, 2026 release note.
+# Covers: Admin API and Claude Enterprise Analytics API responses on API version 2026-10-21 dropping the old names of renamed fields.
+# Opt-in: only responses to requests sent with anthropic-version 2026-10-21 (set by hand, or by the new SDK majors) lose the old names.
+# Severity breaking: code that indexes a removed field fails (KeyError / undefined / type errors in the new SDKs) after the switch.
+# Signatures are access forms (["x"], .get("x"), .x) of the old names, not bare words; context requires a file that names one of the
+# affected endpoint paths. RBAC roles name -> display_name is NOT matched (name is too generic); it's in detail/fix_hint only.
+# exclude: scope.workspace_id / ["scope"]["workspace_id"] are the new reads, not the old field. The group_type query parameter and the
+# workspace_id filter are unchanged, but a dict param ("group_type": ...) can't be told apart from a read and may be flagged.
+# Not covered: Go/Java/C#/Ruby field forms; a local alias of scope (sc = k["scope"]; sc["workspace_id"]) reads as the old field. Messages request changes are in anthropic-2026-10-21-api-version-messages-request-changes.
+id: anthropic-2026-10-21-admin-analytics-fields-renamed
+vendor: Anthropic
+surface: Admin API (RBAC groups, RBAC group members, RBAC roles, rate limits, API keys) and Claude Enterprise Analytics API responses on API version 2026-10-21
+kind: rest
+severity: breaking
+effective: '2026-10-21'
+summary: On API version 2026-10-21 (opt-in, released October 21, 2026), Admin API and Claude Enterprise Analytics API responses no longer include the old names of renamed fields (roles, group_id, name, group_type, workspace_id, actor.email, summaries)
+detail: 'Opt-in: the change applies to requests sent with anthropic-version: 2026-10-21, by hand or through the new SDK majors that send it by default (Python 2.0.0, TypeScript 1.0.0, Go 2.0.0, Java 3.0.0, C# 13.0.0, PHP 1.0.0, Ruby 2.0.0, ant CLI 2.0.0). Admin API: RBAC groups roles -> role_ids; RBAC group members group_id -> rbac_group_id; RBAC roles name -> display_name; organization and workspace rate limits group_type -> group.type; API keys workspace_id -> scope, with different values: a key bound to a workspace, including the Default Workspace, has scope.workspace_id set to that workspace''s real ID, and an all-workspaces key has scope {"type": "organization"} with no workspace_id (on 2023-06-01 both were a null workspace_id). Claude Enterprise Analytics API: per-user usage and cost reports actor.email -> actor.email_address; activity summaries summaries -> data. The group_type query parameter on the rate-limit list endpoints and the workspace_id filter on the API key list endpoint are unchanged.'
+signatures:
+- '["roles"]'
+- '.get("roles")'
+- '.roles'
+- '["group_id"]'
+- '.get("group_id")'
+- '.group_id'
+- '["group_type"]'
+- '.get("group_type")'
+- '.group_type'
+- '["workspace_id"]'
+- '.get("workspace_id")'
+- '.workspace_id'
+- 'actor.email'
+- '["actor"]["email"]'
+- '["summaries"]'
+- '.get("summaries")'
+- '.summaries'
+- 'actor["email"]'
+- 'actor.get("email")'
+- '"actor", {}).get("email")'
+- 'actor?.email'
+context:
+- organizations/rbac_groups
+- organizations/rbac_roles
+- organizations/rate_limits
+- [organizations/workspaces, rate_limits]
+- organizations/api_keys
+- analytics/user_usage_report
+- analytics/user_cost_report
+- analytics/summaries
+- organization.rbac_groups
+- organization.rbacGroups
+- organization.rbac_roles
+- organization.rbacRoles
+- organization.rate_limits
+- organization.rateLimits
+- workspaces.rate_limits
+- workspaces.rateLimits
+- organization.api_keys
+- organization.apiKeys
+- analytics.user_usage_report
+- analytics.userUsageReport
+- analytics.user_cost_report
+- analytics.userCostReport
+- analytics.summaries
+exclude:
+- scope.workspace_id
+- '["scope"]["workspace_id"]'
+- 'scope?.workspace_id'
+- 'scope["workspace_id"]'
+- 'scope.get("workspace_id")'
+- 'scope"].get("workspace_id")'
+- '"scope", {}).get("workspace_id")'
+- analytics.summaries
+repo_context:
+- dep:pypi:anthropic@2.
+- dep:npm:@anthropic-ai/sdk@1.
+- dep:rubygems:anthropic@2.
+- dep:packagist:anthropic-ai/sdk@1.
+- anthropic-sdk-go/v2
+- anthropic-cli/v2
+- com.anthropic:anthropic-java:3.
+- include="anthropic" version="13.
+- [anthropic-version, '2026-10-21']
+source_url: https://platform.claude.com/docs/en/api/migration-2026-10-21.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-23'
+evidence:
+- no longer include the old names of renamed fields
+- In `2026-10-21`, `workspace_id` is removed. Read `scope` instead
+- '`actor.email_address`'
+- url: https://platform.claude.com/docs/en/release-notes/overview.md
+  text: We've released API version `2026-10-21`
+- url: https://platform.claude.com/docs/en/release-notes/overview.md
+  text: October 21, 2026
+fix_hint: 'Before moving to 2026-10-21 (or the new SDK major), read the new names: role_ids (RBAC groups), rbac_group_id (RBAC group members), display_name (RBAC roles), group.type (rate limits), actor.email_address (usage and cost reports) and data (activity summaries). For API keys read scope instead of workspace_id; if you treated a null workspace_id as the Default Workspace, compare scope.workspace_id with the Default Workspace''s ID (List Workspaces with include_default=true, the workspace named "Default"), and treat scope {"type": "organization"} as an all-workspaces key. Keep sending the group_type query parameter and workspace_id filter as before.'
