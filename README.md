@@ -18,11 +18,11 @@ The feed holds 126 reviewed changes, each checked against the vendor's own page.
 
 Next dates ([everything in the next 180 days](https://apiwatch.reignventures.co/upcoming)):
 
-* **Oct 23, 2026**, Google, breaking: [Google will shut down the Gemini API Deep Research agent deep-research-pro-preview-12-2025 on October 23, 2026.](https://apiwatch.reignventures.co/records/google-2026-10-23-deep-research-pro-preview-12-2025)
-* **Oct 23, 2026**, OpenAI, breaking: [Old GPT-3.5/4/o-series snapshots shut down October 23, 2026, including the bare aliases gpt-4, gpt-3.5-turbo, o1, o3-mini, o4-mini](https://apiwatch.reignventures.co/records/openai-2026-10-23-legacy-gpt-snapshots)
 * **Nov 2, 2026**, xAI, silent: [From November 2, 2026, grok-imagine-image-quality requests are served by grok-imagine-image-2.0 at low quality; the slug keeps working, but the model and price change](https://apiwatch.reignventures.co/records/xai-2026-11-02-grok-imagine-image-quality-retirement)
 * **Nov 30, 2026**, Anthropic, breaking: [Anthropic will retire Claude Sonnet 4.5 (claude-sonnet-4-5-20250929) on the Claude API on November 30, 2026; requests to it will fail after that date.](https://apiwatch.reignventures.co/records/anthropic-2026-11-30-claude-sonnet-4-5-model)
 * **Nov 30, 2026**, OpenAI, breaking: [OpenAI reusable prompt objects and the v1/prompts API shut down November 30, 2026](https://apiwatch.reignventures.co/records/openai-2026-11-30-prompts-api-shutdown)
+* **Dec 1, 2026**, OpenAI, breaking: [OpenAI will remove gpt-image-1-mini, gpt-image-1.5 and chatgpt-image-latest from the API on December 1, 2026; the replacement is gpt-image-2.5-sunburst or gpt-image-2.5-flare.](https://apiwatch.reignventures.co/records/openai-2026-12-01-gpt-image-model-deprecations)
+* **Dec 11, 2026**, OpenAI, breaking: [OpenAI will remove the older GPT-5 and o3 snapshots (gpt-5-2025-08-07, gpt-5-mini/nano-2025-08-07, gpt-5-pro-2025-10-06, o3-2025-04-16, o3-pro-2025-06-10) on December 11, 2026.](https://apiwatch.reignventures.co/records/openai-2026-12-11-gpt-5-and-o3-model-deprecations)
 
 ## GitHub Action
 
