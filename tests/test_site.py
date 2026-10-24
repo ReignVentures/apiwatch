@@ -153,7 +153,7 @@ def test_canonical_urls_sitemap_and_robots(tmp_path):
     ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     locs = [e.text for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url/s:loc", ns)]
     assert "https://feed.example.com/records/acme-2026-10-01-soon" in locs and "https://feed.example.com/vendors/beta-mcp" in locs
-    assert not any("draft" in u or "demo" in u for u in locs) and len(locs) == 1 + 1 + 1 + 1 + 1 + 1 + 2 + 3   # index, upcoming, pro, mcp-server, ids, mcp-servers
+    assert not any("draft" in u or "demo" in u for u in locs) and len(locs) == 1 + 1 + 1 + 1 + 1 + 1 + 1 + 2 + 3   # index, upcoming, pro, mcp-server, how-it-works, ids, mcp-servers
     assert "https://feed.example.com/upcoming" in locs and "https://feed.example.com/ids/" in locs
     assert "Sitemap: https://feed.example.com/sitemap.xml" in (out / "robots.txt").read_text()
 
@@ -592,3 +592,23 @@ def test_vendor_feed_without_a_base_url_has_no_links(tmp_path):
     root = ET.parse(tmp_path / "site" / "vendors" / "acme.xml").getroot()
     assert root.findall("{http://www.w3.org/2005/Atom}link") == []
     assert len(root.findall("{http://www.w3.org/2005/Atom}entry")) == 2
+
+
+def test_how_it_works_page(tmp_path):
+    build(tmp_path, base_url="https://feed.example.com")
+    out = tmp_path / "site"
+    html = (out / "how-it-works.html").read_text()
+    assert "<title>How it works · apiwatch</title>" in html and "<h1>How apiwatch works</h1>" in html
+    assert '<link rel="canonical" href="https://feed.example.com/how-it-works">' in html
+    assert "uses: ReignVentures/apiwatch@v1" in html and html.count('<aside class="cta"') == 1
+    for k in site.SEV_LABEL:
+        assert f"<strong>{site.SEV_LABEL[k]}</strong>" in html
+    assert "<script" not in html and "—" not in html and "–" not in html
+    ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    urls = {e.findtext("s:loc", namespaces=ns): e.findtext("s:lastmod", namespaces=ns)
+            for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url", ns)}
+    assert urls["https://feed.example.com/how-it-works"] == site.HOW_PAGE_UPDATED
+    # linked from the footer of every page, relative at depth and root-absolute on the 404 page
+    for page in out.rglob("*.html"):
+        up = "/" if page.name == "404.html" else "../" * (len(page.relative_to(out).parts) - 1)
+        assert f'href="{up}how-it-works.html">How it works</a>' in page.read_text(), page

@@ -121,6 +121,7 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
     (out / "_worker.js").write_text(MCP_WORKER.read_text())
     (out / "_routes.json").write_text(json.dumps(MCP_ROUTES) + "\n")
     (out / "mcp-server.html").write_text(_canonical(_mcp_page(base), base, "mcp-server"))
+    (out / "how-it-works.html").write_text(_canonical(_how_page(), base, "how-it-works"))
     (out / "feed.xml").write_text(_atom(recs, base, today))
     _mcp_history_pages(out, views, base, today)
     (out / "robots.txt").write_text("User-agent: *\nAllow: /\n" + (f"Sitemap: {base}sitemap.xml\n" if base else ""))
@@ -137,7 +138,7 @@ def _canonical(html: str, base: str, path: str) -> str:
 
 def _sitemap(recs, by_vendor, ids, base, today, views=()) -> str:
     urls = [(base, today.isoformat()), (f"{base}upcoming", today.isoformat()), (f"{base}pro/", today.isoformat()),
-            (f"{base}mcp-server", MCP_PAGE_UPDATED)]
+            (f"{base}mcp-server", MCP_PAGE_UPDATED), (f"{base}how-it-works", HOW_PAGE_UPDATED)]
     # the id index changes when an id page is added or its key date passes: the latest id page change
     urls.append((f"{base}ids/", max((_id_lastmod(rs, today) for _, rs in ids.values()), default=today.isoformat())))
     urls += [(f"{base}vendors/{vendor_slug(v)}", max(r.verified_on or r.effective for r in rs)) for v, rs in by_vendor.items()]
@@ -188,7 +189,7 @@ def _page(title: str, body: str, depth: int = 0, up: str | None = None, descript
 <footer class="site"><p>Records summarize vendor changes in our own words and link the vendor's primary source.
 Each one is reviewed against that source before it's published, and its key facts are re-checked against the source daily;
 a record whose source no longer supports it comes off the site. Reviews are AI-assisted: confirm details that matter before acting.</p>
-<p class="links"><a href="{up}pro/">apiwatch Pro</a> · <a href="{up}terms.html">Terms</a> · <a href="{up}privacy.html">Privacy</a> ·
+<p class="links"><a href="{up}how-it-works.html">How it works</a> · <a href="{up}pro/">apiwatch Pro</a> · <a href="{up}terms.html">Terms</a> · <a href="{up}privacy.html">Privacy</a> ·
 <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a> · © Reign Ventures LLC</p></footer>
 </body>
 </html>
@@ -528,6 +529,66 @@ the URL above.</p>
     return _page("apiwatch MCP server", body,
                  description="A free, read only MCP server: agents check a model id or API against the apiwatch "
                              "feed of reviewed breaking changes, retirements and deprecations. No install or account.")
+
+
+HOW_PAGE_UPDATED = "2026-10-24"   # sitemap lastmod: change it when the page text changes
+
+
+def _how_page() -> str:
+    """How records are written and reviewed (docs/REVIEW.md), the daily source check (apiwatch/check.py) and the
+    free Action (action.yml), in plain words. Facts from those files only; no record counts, so it never goes stale."""
+    sev = "".join(f"<li><strong>{SEV_LABEL[k]}</strong>: {escape(SEV_NOTE[k])}</li>" for k in SEV_LABEL)
+    body = f"""<p class="crumb"><a href="index.html">All changes</a></p>
+<section class="intro">
+<h1>How apiwatch works</h1>
+<p class="lede">How a record gets into the feed, how it stays correct, and what the free GitHub Action does with it.</p>
+</section>
+<h2>Where a change comes from</h2>
+<p>A daily job reads vendor changelogs. A new entry there is a lead: a prompt to research, never a record. Model
+deprecation pages are also parsed into drafts on demand; a draft is published only after the review below. A record is written from the vendor's own primary source: its docs, changelog, release
+notes, status page or official repository. Blogs, news, aggregators and model memory don't count.</p>
+<h2>How a record is reviewed</h2>
+<p>A record is published only after it passes two checks. The reviewer is an AI agent that did not write the
+record; no human step is required.</p>
+<ol>
+<li><strong>An independent review.</strong> A reviewer that did not write the record opens the vendor's source and
+checks every field: the exact date the change takes effect (the shutdown date, not the announcement date), the
+severity, the summary and fix, and the identifiers the scan looks for. Anything the source doesn't say comes out.
+The verdict is pass, fix with exact edits, or reject.</li>
+<li><strong>An automated source check.</strong> Each record carries two to five short strings copied word for word
+from the source, such as model ids and dates. A program fetches the source and confirms they are there.</li>
+</ol>
+<p>Severities mean:</p>
+<ul>{sev}</ul>
+<p>A dated retirement within 180 days counts as breaking.</p>
+<h2>The daily source check</h2>
+<p>Every day, before the site is built, the source check runs again on every record. If a vendor edits or removes
+the page and a record's quoted strings are gone, that record is left off the site while its source no longer
+supports it, and the run is flagged so the record gets reviewed again. A page
+that fails to load is reported but doesn't pull the record, so a flaky vendor site can't take it down for a day.</p>
+<h2>What the free Action does</h2>
+<p>Add the two steps shown at the end of this page to a GitHub Actions job. Each run scans your code for the
+identifiers in the records bundled with the Action version you use: model ids, endpoint paths, tool and field
+names. Matching is token aware, so <code>gpt-4</code> does not match <code>gpt-4o</code>. Records that only apply to
+some code (a dependency version, some files) are only reported there. The run then:</p>
+<ul>
+<li>writes a report to the job summary: which changes touch your code, how severe, whether the date is past or
+coming, with a link to each location;</li>
+<li>writes a fix brief for each change it finds, with what changed, where, a suggested fix and acceptance criteria,
+uploaded as a workflow artifact;</li>
+<li>writes SARIF; add GitHub's <code>upload-sarif</code> step to see hits as code scanning annotations;</li>
+<li>fails the step when a breaking or silent change touches your code (on by default, <code>fail-on-breaking</code>).</li>
+</ul>
+<p>Optional inputs keep one report comment up to date on a pull request once there is a hit (<code>comment</code>,
+needs <code>pull-requests: write</code>) and gate a pull request only on the files it changes
+(<code>only-changed</code>). The scan itself makes no network calls: your code never leaves your runner.</p>
+<h2>What it doesn't do</h2>
+<p>apiwatch only knows the changes in its feed. No hit is not the same as safe. Records summarize vendor changes in
+our own words and link the source: confirm details that matter before acting.</p>
+{CTA}"""
+    return _page("How it works", body,
+                 description="How apiwatch records are written from vendor sources, reviewed, re-checked daily, and "
+                             "how the free GitHub Action finds the code a change lands on.")
 
 
 # ---------- mcp server change history (docs/MCP-HISTORY.md) ----------
