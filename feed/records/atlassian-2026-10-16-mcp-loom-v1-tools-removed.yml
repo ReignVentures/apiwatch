@@ -1,0 +1,39 @@
+# Independent review (docs/REVIEW.md) on 2026-10-29: fixed. Header note on match= corrected; fix_hint now also says to read discover (V1 operations used the discover and execute flow); detail clarified the same way.
+# Authored 2026-10-29 from the primary source (Atlassian Rovo MCP changelog data feed, dac-changelogs; the HTML changelog renders with JavaScript) for watch leads #38/#39: CHANGE-3504 (removal) and its companion CHANGE-3503 (V2 announcement), both dated 2026-10-23 in the feed.
+# Note: the feed's match= parameter returns the limit-sized page containing that change (offset follows it), so the source_url keeps working as newer entries arrive; CHANGE-3503 and CHANGE-3504 share a page as of 2026-10-29.
+# Effective date: CHANGE-3504 says "As of October 16, 2026" the legacy tools are no longer returned to the V2 rollout cohort; users outside the cohort keep V1 until their cohort moves.
+id: atlassian-2026-10-16-mcp-loom-v1-tools-removed
+vendor: Atlassian Rovo MCP
+surface: Rovo MCP Loom tools (read_loom / write_loom) V1 video tools → V2 Loom Object tools
+kind: mcp
+severity: breaking
+effective: "2026-10-16"
+summary: Rovo MCP stopped returning the legacy Loom video tools to the Loom V2 rollout cohort; V2 Loom Object tools replace them
+detail: "Atlassian's changelog (CHANGE-3504, dated 23 Oct 2026) says that as of October 16, 2026 the legacy Loom MCP tools are no longer returned to users in the Loom V2 rollout cohort, and lists V2 replacements (CHANGE-3503 announces the consolidated Loom Object tool surface). This applies per rollout cohort: users outside the V2 cohort continue to receive the V1 tool surface until their cohort moves to V2, so the date a given account loses the old tools can be later. getLoomVideo is unlisted rather than immediately disabled: it is no longer advertised in tools/list or discover, but an existing session that cached its schema can keep calling it by exact name during a compatibility period, and a later cleanup change will remove it. The other replaced operations, which use the discover and execute flow, are removed from the enabled operation list for each V2 cohort. getLoomVideoDownloadUrl and recoverLoomVideo are not replaced by this migration. The tools stay in the read_loom and write_loom permission groups."
+signatures:
+  - "listLoomVideos"
+  - "listLoomVideosSharedWithMe"
+  - "getLoomVideo"
+  - "getLoomVideoComments"
+  - "getLoomMeetingActionItems"
+  - "createLoomVideoComment"
+  - "createLoomVideoReaction"
+  - "updateLoomVideoTitle"
+  - "updateLoomVideoPermissions"
+  - "shareLoomVideo"
+  - "createLoomVideoUpload"
+  - "publishLoomVideo"
+  - "listLoomFolders"
+  - "createLoomFolder"
+  - "moveLoomVideoToFolder"
+verified: true
+verified_by: claude
+verified_on: "2026-10-29"
+source_url: "https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3504"
+evidence:
+  - {url: "https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3504", text: "Legacy Loom MCP recording tools have been removed"}
+  - {url: "https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3504", text: "As of October 16, 2026, the following legacy Loom MCP tools"}
+  - {url: "https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3504", text: "are no longer returned to users in the Loom V2 rollout cohort"}
+  - {url: "https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3504", text: "is unlisted rather than immediately disabled"}
+  - {url: "https://dac-changelogs.services.atlassian.com/changes?apiGroups=rovo-mcp&limit=15&match=CHANGE-3503", text: "Users outside the V2 cohort will continue to receive"}
+fix_hint: "Switch to the V2 names the changelog gives: listLoomVideos and listLoomVideosSharedWithMe → listLoomObjects; getLoomVideo → getLoomObjectsContent; getLoomVideoComments and getLoomMeetingActionItems → getLoomObjectsContent with the applicable content expansion; createLoomVideoComment and createLoomVideoReaction → addLoomInteraction; updateLoomVideoTitle → updateLoomObjectMetadata; updateLoomVideoPermissions → updateLoomObjectVisibility; shareLoomVideo → shareLoomObject; createLoomVideoUpload → createLoomObjectUpload; publishLoomVideo → publishLoomObject; listLoomFolders → listLoomObjectFolders; createLoomFolder → createLoomObjectFolder; moveLoomVideoToFolder → moveLoomObjectToFolder. Keep getLoomVideoDownloadUrl and recoverLoomVideo. Because rollout is per cohort, read tools/list (and discover, for operations called through execute) at startup and use whichever set the server advertises."
