@@ -1,0 +1,75 @@
+# Written by an author agent from changelog lead #45 (apiwatch watch), from the primary source page only. Independent review (docs/REVIEW.md) 2026-10-31 by a fresh agent: fix (scope only), applied.
+# Scope: PUBLIC PREVIEW API version 2026-10-28.preview (v2 money management Outbound Payments).
+# Recorded: created_gt/created_gte/created_lt/created_lte removed from list Outbound Payments (all SDK spellings the page lists), plus the ACH default change in detail.
+# Not recorded: the additive parts (Payout Intents, recipient verification, statement descriptors, tracking details, payout_method_options, new values) and the other
+# table removals on the page (wire capability, becs/eft/npp/sepa_instant fee networks, the outbound_flow_from_closed_financial_account_unsupported code).
+# context needs a list Outbound Payments reference (SDK list call, list-params type, or the REST path) plus money management; created_gt-style names in other
+# list calls in the same file (for example outbound transfers) may still be flagged. repo_context gates on a preview API version string or the preview SDK pins (stripe-python 16.2.0b*, stripe-node 23.2.0-beta*, both pinned to 2026-10-28.preview per their beta CHANGELOGs).
+# Java is matched through the builder setters (setCreatedGte); the page lists the field names only.
+id: stripe-2026-10-28-outbound-payments-list-created-filters-removed
+vendor: Stripe
+surface: 'Stripe API 2026-10-28.preview (public preview) — created_gt/created_gte/created_lt/created_lte removed from list v2 Outbound Payments; ACH default submission now next-day'
+kind: rest
+severity: breaking
+effective: '2026-10-28'
+summary: 'In Stripe''s public preview API version 2026-10-28.preview, list Outbound Payments drops the created_gt, created_gte, created_lt and created_lte parameters in favor of a nested created object'
+detail: 'This applies only to callers on the public preview version 2026-10-28.preview, or on the preview SDKs that pin it (stripe-python 16.2.0b1, stripe-node 23.2.0-beta.1), who use v2 Outbound Payments. The created parameter on list Outbound Payments now takes an object of comparison operators (created[gte]=… in REST, a nested field on created in the SDKs). The same version also changes the default ACH payout submission timing from same-day to next-day; requests that omit the submission timing now use next-day ACH, without an error.'
+signatures:
+- created_gt
+- created_gte
+- created_lt
+- created_lte
+- createdGt
+- createdGte
+- createdLt
+- createdLte
+- CreatedGTE
+- CreatedGt
+- CreatedLT
+- CreatedLte
+- CreatedGte
+- CreatedLt
+- setCreatedGt
+- setCreatedGte
+- setCreatedLt
+- setCreatedLte
+context:
+- - money_management
+  - outbound_payments.list
+- - moneymanagement
+  - outboundpayments.list
+- - moneymanagement
+  - outboundpayments->all
+- - moneymanagement
+  - outboundpaymentlistparams
+- - money_management
+  - outboundpaymentlistparams
+- - moneymanagement
+  - outboundpaymentlistoptions
+- v2moneymanagementoutboundpaymentlistparams
+- v2/money_management/outbound_payments
+repo_context:
+- 0.preview
+- 1.preview
+- 2.preview
+- 3.preview
+- 4.preview
+- 5.preview
+- 6.preview
+- 7.preview
+- 8.preview
+- 9.preview
+- dep:pypi:stripe@16.2.0b
+- dep:npm:stripe@23.2.0-beta
+source_url: https://docs.stripe.com/changelog/endive/2026-10-28/outbound-flows-api-updates.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-31'
+evidence:
+- removes the `created_gt`, `created_gte`, `created_lt`, and `created_lte` parameters
+- update it to use the nested `created` parameter
+- default submission timing for ACH payouts from same-day to next-day
+- 'Stripe-Version: 2026-10-28.preview'
+- url: https://github.com/stripe/stripe-python/blob/beta/CHANGELOG.md
+  text: This release changes the pinned API version to `2026-10-28.preview`
+fix_hint: 'Before moving to 2026-10-28.preview, replace created_gt, created_gte, created_lt and created_lte on list Outbound Payments with the nested created object (for example created[gte]=… in REST, or the nested field on created in the SDK). If you rely on same-day ACH by default, set to.payout_method_options.bank_account.preferred_network_options.ach.submission to same_day.'

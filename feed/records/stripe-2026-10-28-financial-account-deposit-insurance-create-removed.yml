@@ -1,0 +1,64 @@
+# Written by an author agent from changelog lead #40 (apiwatch watch), from the primary source page only. Independent review (docs/REVIEW.md) 2026-10-31 by a fresh agent: fix (Java/PHP/optional-chaining spellings, attribute reads excluded, preview SDK pin gate with beta CHANGELOG evidence), applied.
+# Scope: PUBLIC PREVIEW API version 2026-10-28.preview (v2 money management).
+# deposit_insurance_eligibility stays a read-only property on the Financial Account response, so plain reads are fine. The context groups require a v2 Financial Account
+# create call (SDK service call, create-params type, or a POST to the REST path) in the same file; attribute reads are excluded (see detail).
+# repo_context gates on a preview API version string or the preview SDK pins (stripe-python 16.2.0b*, stripe-node 23.2.0-beta*, both pinned to 2026-10-28.preview per their beta CHANGELOGs) (digit before ".preview") so GA integrations aren't flagged.
+id: stripe-2026-10-28-financial-account-deposit-insurance-create-removed
+vendor: Stripe
+surface: 'Stripe API 2026-10-28.preview (public preview) — deposit_insurance_eligibility removed from v2 Financial Account create params (storage)'
+kind: rest
+severity: breaking
+effective: '2026-10-28'
+summary: 'In Stripe''s public preview API version 2026-10-28.preview, v2 Financial Account create no longer accepts the deposit_insurance_eligibility parameter in the storage hash'
+detail: 'This applies only to callers on the public preview version 2026-10-28.preview, or on the preview SDKs that pin it (stripe-python 16.2.0b1, stripe-node 23.2.0-beta.1). Stripe says that to avoid errors you must remove deposit_insurance_eligibility from v2 Financial Account create requests; previously the parameter was accepted but had no effect. It stays a read-only property on the Financial Account response object, so reading it is unaffected. Attribute reads (obj.deposit_insurance_eligibility) are not flagged; an assignment like params.storage.deposit_insurance_eligibility = … is also not flagged.'
+signatures:
+- deposit_insurance_eligibility
+- depositInsuranceEligibility
+- DepositInsuranceEligibility
+- setDepositInsuranceEligibility
+exclude:
+- .deposit_insurance_eligibility
+- .DepositInsuranceEligibility
+- ->deposit_insurance_eligibility
+- getDepositInsuranceEligibility
+context:
+- - money_management
+  - financial_accounts.create
+- - moneymanagement
+  - financialaccounts.create
+- - moneymanagement
+  - financialaccounts->create
+- - moneymanagement
+  - financialaccountcreateparams
+- - money_management
+  - financialaccountcreateparams
+- v2moneymanagementfinancialaccountstorageparams
+- v2moneymanagementfinancialaccountstorageoptions
+- - v2/money_management/financial_accounts
+  - post
+repo_context:
+- 0.preview
+- 1.preview
+- 2.preview
+- 3.preview
+- 4.preview
+- 5.preview
+- 6.preview
+- 7.preview
+- 8.preview
+- 9.preview
+- dep:pypi:stripe@16.2.0b
+- dep:npm:stripe@23.2.0-beta
+source_url: https://docs.stripe.com/changelog/endive/2026-10-28/deposit-insurance-eligibility-financial-accounts-create-removal.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-31'
+evidence:
+- you can no longer include the `deposit_insurance_eligibility` parameter in the request body
+- is a read-only property on the Financial Account response object
+- 'Stripe-Version: 2026-10-28.preview'
+- url: https://github.com/stripe/stripe-python/blob/beta/CHANGELOG.md
+  text: This release changes the pinned API version to `2026-10-28.preview`
+- url: https://github.com/stripe/stripe-node/blob/beta/CHANGELOG.md
+  text: This release changes the pinned API version to `2026-10-28.preview`
+fix_hint: 'Before moving to 2026-10-28.preview, remove deposit_insurance_eligibility from the storage hash of v2 Financial Account create requests. You can keep reading it from the returned Financial Account.'

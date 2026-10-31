@@ -1,0 +1,62 @@
+# Written by an author agent from changelog lead #42 (apiwatch watch), from the primary source page only. Independent review (docs/REVIEW.md) 2026-10-31 by a fresh agent: fix (scope only), applied.
+# Scope: PUBLIC PREVIEW API version 2026-10-28.preview (v2 money management Financial Addresses and Received Credits).
+# sepa_credit_transfer is also a GA v1 value (Sources, etc.), so context needs a v2 Financial Address or Received Credit reference plus money management in the same file,
+# and repo_context gates on a preview API version string or the preview SDK pins (stripe-python 16.2.0b*, stripe-node 23.2.0-beta*, both pinned to 2026-10-28.preview per their beta CHANGELOGs). The page lists no SDK constant for the old value, so only the literal string is a signature.
+# The same page adds eur as a Financial Address currency; that part is additive and not recorded.
+# Also matches the Credit a Financial Address test helper (the network parameter), which SDK code may call without a money_management reference.
+id: stripe-2026-10-28-sepa-credit-transfer-network-renamed
+vendor: Stripe
+surface: 'Stripe API 2026-10-28.preview (public preview) — network value sepa_credit_transfer renamed to sepa on v2 Financial Addresses and Received Credits'
+kind: rest
+severity: breaking
+effective: '2026-10-28'
+summary: 'In Stripe''s public preview API version 2026-10-28.preview, the sepa_credit_transfer network value on v2 Financial Addresses and Received Credits is renamed to sepa; requests that send the old value fail and comparisons against it stop matching'
+detail: 'This applies only to callers on the public preview version 2026-10-28.preview, or on the preview SDKs that pin it (stripe-python 16.2.0b1, stripe-node 23.2.0-beta.1), who use v2 Financial Addresses or Received Credits. Stripe says the sepa_credit_transfer value is no longer supported. The rename applies to both request parameters and response values, so code that sets or reads the network property must use sepa.'
+signatures:
+- sepa_credit_transfer
+context:
+- - financial_address
+  - money_management
+- - financialaddress
+  - money_management
+- - financialaddress
+  - moneymanagement
+- - financial_address
+  - moneymanagement
+- - received_credit
+  - money_management
+- - receivedcredit
+  - money_management
+- - receivedcredit
+  - moneymanagement
+- - received_credit
+  - moneymanagement
+- - test_helpers
+  - financial_address
+- - testhelpers
+  - financialaddress
+repo_context:
+- 0.preview
+- 1.preview
+- 2.preview
+- 3.preview
+- 4.preview
+- 5.preview
+- 6.preview
+- 7.preview
+- 8.preview
+- 9.preview
+- dep:pypi:stripe@16.2.0b
+- dep:npm:stripe@23.2.0-beta
+source_url: https://docs.stripe.com/changelog/endive/2026-10-28/financial-addresses-eur-currency-sepa-networks-support.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-31'
+evidence:
+- The `sepa_credit_transfer` value is no longer supported.
+- The `sepa_credit_transfer` network enum value is now `sepa`.
+- Requests that use the old value fail
+- 'Stripe-Version: 2026-10-28.preview'
+- url: https://github.com/stripe/stripe-python/blob/beta/CHANGELOG.md
+  text: This release changes the pinned API version to `2026-10-28.preview`
+fix_hint: 'Before moving to 2026-10-28.preview, send and compare the network value sepa instead of sepa_credit_transfer for v2 Financial Addresses and Received Credits, in request parameters and when reading the network property.'

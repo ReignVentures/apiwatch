@@ -1,0 +1,64 @@
+# Written by an author agent from changelog lead #44 (apiwatch watch), from the primary source page only. Independent review (docs/REVIEW.md) 2026-10-31 by a fresh agent: fix (Java/PHP/optional-chaining spellings, attribute reads excluded, preview SDK pin gate with beta CHANGELOG evidence), applied.
+# Scope: PUBLIC PREVIEW API version 2026-10-28.preview (v2 money management Financial Addresses).
+# settlement_currency stays on the Financial Address response (now required), so context requires a v2 Financial Address create call (SDK service call, create-params
+# type, or a POST to the REST path) in the same file; attribute reads are excluded (see detail). repo_context gates on a preview API version string or the preview SDK pins (stripe-python 16.2.0b*, stripe-node 23.2.0-beta*, both pinned to 2026-10-28.preview per their beta CHANGELOGs).
+id: stripe-2026-10-28-financial-address-settlement-currency-create-removed
+vendor: Stripe
+surface: 'Stripe API 2026-10-28.preview (public preview) — settlement_currency removed from v2 Financial Address create, required in the response'
+kind: rest
+severity: breaking
+effective: '2026-10-28'
+summary: 'In Stripe''s public preview API version 2026-10-28.preview, creating a v2 Financial Address no longer accepts settlement_currency, and the response always includes it'
+detail: 'This applies only to callers on the public preview version 2026-10-28.preview, or on the preview SDKs that pin it (stripe-python 16.2.0b1, stripe-node 23.2.0-beta.1). Stripe removes the settlement_currency parameter from create a Financial Address requests and classes this as a breaking change. settlement_currency becomes required in the Financial Address response, defaulting to the associated bank account''s currency, so reading it keeps working. Attribute reads (obj.settlement_currency) are not flagged; only create parameters need to change.'
+signatures:
+- settlement_currency
+- settlementCurrency
+- SettlementCurrency
+- setSettlementCurrency
+exclude:
+- .settlement_currency
+- .SettlementCurrency
+- ->settlement_currency
+- getSettlementCurrency
+context:
+- - money_management
+  - financial_addresses.create
+- - moneymanagement
+  - financialaddresses.create
+- - moneymanagement
+  - financialaddresses->create
+- - moneymanagement
+  - financialaddresscreateparams
+- - money_management
+  - financialaddresscreateparams
+- - moneymanagement
+  - financialaddresscreateoptions
+- v2moneymanagementfinancialaddressparams
+- - v2/money_management/financial_addresses
+  - post
+repo_context:
+- 0.preview
+- 1.preview
+- 2.preview
+- 3.preview
+- 4.preview
+- 5.preview
+- 6.preview
+- 7.preview
+- 8.preview
+- 9.preview
+- dep:pypi:stripe@16.2.0b
+- dep:npm:stripe@23.2.0-beta
+source_url: https://docs.stripe.com/changelog/endive/2026-10-28/financial-addresses-settlement-currency.md
+verified: true
+verified_by: claude
+verified_on: '2026-10-31'
+evidence:
+- Removes the `settlement_currency` parameter from create requests
+- The default value is the associated bank account’s currency.
+- 'Stripe-Version: 2026-10-28.preview'
+- url: https://github.com/stripe/stripe-python/blob/beta/CHANGELOG.md
+  text: This release changes the pinned API version to `2026-10-28.preview`
+- url: https://github.com/stripe/stripe-node/blob/beta/CHANGELOG.md
+  text: This release changes the pinned API version to `2026-10-28.preview`
+fix_hint: 'Before moving to 2026-10-28.preview, stop passing settlement_currency when you create a v2 Financial Address. Read settlement_currency from the response instead; it defaults to the associated bank account''s currency.'
