@@ -1,0 +1,46 @@
+# Authored 2026-11-01 from lead #49 (Notion changelog, October 30, 2026, "Notion-flavored Markdown becomes the default in
+# the next Notion-Version"), from the primary sources: the Notion changelog (https://developers.notion.com/page/changelog.md),
+# the Markdown versions section of Working with markdown content
+# (https://developers.notion.com/guides/data-apis/working-with-markdown-content.md#markdown-versions), and the official SDK
+# source at v5.29.0 (https://raw.githubusercontent.com/makenotion/notion-sdk-js/v5.29.0/src/api-endpoints/pages.ts:
+# markdown_version?: "v1" | "v2" on the page markdown parameters; src/Client.ts: pages.retrieveMarkdown / pages.updateMarkdown).
+# 2026-11-01 independent review (docs/REVIEW.md): fix. Facts, date, severity and evidence confirmed. Added the Python dict v2
+# form and "text/markdown" to exclude; fix_hint now says to send markdown_version on creates only with markdown (with children
+# or rich_text it returns 400).
+# Severity: deprecation. Notion labels enhanced markdown (v1) deprecated and tells callers to set markdown_version to v2 now.
+# Nothing changes today for requests that send a current Notion-Version: v1 stays the default there. The next Notion-Version
+# (name and release date not announced) makes v2 the default and rejects markdown_version "v1" with 400; v1 is planned to
+# retire on every Notion-Version about three months after that, with the date posted at least three months ahead. No date
+# yet, so not breaking. effective = the announcement date.
+# Signatures: markdown_version (the parameter; code that already sends "v2" is excluded), the SDK methods retrieveMarkdown and
+# updateMarkdown (@notionhq/client), and the /markdown path segment of GET/PATCH /v1/pages/:page_id/markdown (written as
+# `/v1/pages/${id}/markdown`, so the segment is the only stable token). All need "notion" in the file; /markdown is generic,
+# so every context group also needs a page-markdown hint.
+# Known limits: POST /v1/pages, POST /v1/comments and PATCH /v1/comments/:comment_id with a `markdown` body (no
+# markdown_version) are affected too but have no specific token (`markdown`, `pages.create`, `comments.create` are generic),
+# so they are not matched. A markdown_version value held in a variable is matched even if it is "v2", and a call that already
+# sends "v2" is still reported through its retrieveMarkdown/updateMarkdown or /markdown token (only the markdown_version
+# token itself is excluded). No other record claims these ids. Test scan (scratch repo): expected hits found, v2 excludes held
+# (incl. the single-quoted Python dict form); "text/markdown" is excluded. A "/markdown-it" import path in a matching file still hits /markdown.
+id: notion-2026-10-30-enhanced-markdown-v1-deprecated
+vendor: Notion
+surface: Notion API markdown endpoints (POST /v1/pages, GET and PATCH /v1/pages/:page_id/markdown, POST /v1/comments, PATCH /v1/comments/:comment_id) — markdown_version parameter and enhanced markdown (v1) syntax
+kind: rest
+severity: deprecation
+effective: "2026-10-30"
+summary: Notion deprecated enhanced markdown (markdown_version v1); the next Notion-Version makes Notion-flavored Markdown (v2) the default and rejects v1 with 400
+detail: On October 30, 2026, Notion deprecated enhanced markdown (v1) on its markdown endpoints (POST /v1/pages, GET and PATCH /v1/pages/:page_id/markdown, POST /v1/comments, PATCH /v1/comments/:comment_id) and told callers to set markdown_version to v2 now and test the results. Nothing changes yet for requests that send a current Notion-Version; they keep v1 as the default and can opt in to v2. The next Notion-Version, whose name and release date are not yet announced, will make Notion-flavored Markdown (v2) the default, so requests without markdown_version get v2 syntax, and requests that set markdown_version to v1 will return a 400 validation_error. Notion plans to retire v1 on every Notion-Version about three months after that version ships and will post the retirement date in the changelog at least three months ahead; no removal date has been given. @notionhq/client v5.29.0 adds markdown_version to the page markdown and comment methods.
+signatures: ["markdown_version", "retrieveMarkdown", "updateMarkdown", "/markdown"]
+context: [["notion", "markdown_version"], ["notion", "retrieveMarkdown"], ["notion", "updateMarkdown"], ["notion", "/v1/pages/"]]
+exclude: ['markdown_version: "v2"', "markdown_version: 'v2'", 'markdown_version="v2"', "markdown_version='v2'", 'markdown_version": "v2"', "markdown_version=v2", "markdown_version': 'v2'", "text/markdown"]
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-11-01"
+evidence:
+  - "October 30, 2026"
+  - "Notion-flavored Markdown becomes the default in the next Notion-Version"
+  - "Enhanced markdown (`v1`) is now deprecated."
+  - "Requests that set `markdown_version` to `v1` will return a `400`"
+  - {url: "https://developers.notion.com/guides/data-apis/working-with-markdown-content.md", text: "Default on current Notion-Versions; deprecated"}
+fix_hint: Set markdown_version to "v2" on every Notion markdown request now (query parameter on GET /v1/pages/:page_id/markdown; body parameter on PATCH /v1/pages/:page_id/markdown, on POST /v1/pages and the comment endpoints only when the request sends markdown, since sending it with children or rich_text returns a 400 validation_error; @notionhq/client v5.29.0 or later accepts it), then update any code that writes or parses page markdown for the Notion-flavored Markdown syntax (see Notion's Migrate to Notion-flavored Markdown guide) and test the results. Stop sending markdown_version "v1". Before moving to the next Notion-Version, make sure no markdown request still relies on v1.

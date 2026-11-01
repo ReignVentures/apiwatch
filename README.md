@@ -11,18 +11,18 @@ Vendors retire models, rename MCP tools, and change API behavior on a schedule y
 
 ## What it caught
 
-The feed holds 133 reviewed changes, each checked against the vendor's own page.
+The feed holds 135 reviewed changes, each checked against the vendor's own page.
 
-* **By vendor:** Google 33, Stripe 30, OpenAI 26, Anthropic 16, Notion MCP 8, Atlassian Rovo MCP 4, GitHub MCP Server 4, xAI 4, Notion 3, Twilio 3, Greenhouse 1, MCP specification 1
-* **By severity:** breaking 99, silent 25, deprecation 9
+* **By vendor:** Google 33, Stripe 30, OpenAI 26, Anthropic 17, Notion MCP 8, Atlassian Rovo MCP 4, GitHub MCP Server 4, Notion 4, xAI 4, Twilio 3, Greenhouse 1, MCP specification 1
+* **By severity:** breaking 100, silent 25, deprecation 10
 
 Next dates ([everything in the next 180 days](https://apiwatch.reignventures.co/upcoming)):
 
 * **Nov 2, 2026**, xAI, silent: [From November 2, 2026, grok-imagine-image-quality requests are served by grok-imagine-image-2.0 at low quality; the slug keeps working, but the model and price change](https://apiwatch.reignventures.co/records/xai-2026-11-02-grok-imagine-image-quality-retirement)
 * **Nov 30, 2026**, Anthropic, breaking: [Anthropic will retire Claude Sonnet 4.5 (claude-sonnet-4-5-20250929) on the Claude API on November 30, 2026; requests to it will fail after that date.](https://apiwatch.reignventures.co/records/anthropic-2026-11-30-claude-sonnet-4-5-model)
+* **Nov 30, 2026**, Anthropic, breaking: [Fast mode for Claude Opus 4.8 is deprecated and will be removed on November 30, 2026; after that, claude-opus-4-8 requests with speed "fast" return an error](https://apiwatch.reignventures.co/records/anthropic-2026-11-30-opus-4-8-fast-mode-removed)
 * **Nov 30, 2026**, OpenAI, breaking: [OpenAI reusable prompt objects and the v1/prompts API shut down November 30, 2026](https://apiwatch.reignventures.co/records/openai-2026-11-30-prompts-api-shutdown)
 * **Dec 1, 2026**, OpenAI, breaking: [OpenAI will remove gpt-image-1-mini, gpt-image-1.5 and chatgpt-image-latest from the API on December 1, 2026; the replacement is gpt-image-2.5-sunburst or gpt-image-2.5-flare.](https://apiwatch.reignventures.co/records/openai-2026-12-01-gpt-image-model-deprecations)
-* **Dec 11, 2026**, OpenAI, breaking: [OpenAI will remove the older GPT-5 and o3 snapshots (gpt-5-2025-08-07, gpt-5-mini/nano-2025-08-07, gpt-5-pro-2025-10-06, o3-2025-04-16, o3-pro-2025-06-10) on December 11, 2026.](https://apiwatch.reignventures.co/records/openai-2026-12-11-gpt-5-and-o3-model-deprecations)
 
 ## GitHub Action
 

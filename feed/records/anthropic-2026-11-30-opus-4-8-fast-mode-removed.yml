@@ -1,0 +1,40 @@
+# Promoted 2026-11-01 after independent review (docs/REVIEW.md): pass; facts, date, severity, SDK constants and evidence confirmed; evidence 3 shortened. The SAME_SURFACE pair with the Opus 4.7 record was added to tests/test_records.py.
+# Draft authored 2026-11-01 from lead #48 (apiwatch watch, Anthropic release notes entry dated October 30, 2026) by an author agent.
+# Checked against the primary sources only: release-notes/overview.md (October 30, 2026 entry), build-with-claude/fast-mode.md
+# (deprecation warning, supported models, required beta headers table), and the Go/Java SDK sources on
+# raw.githubusercontent.com for constant spellings (anthropic-sdk-go beta.go AnthropicBetaFastMode2026_02_01, message.go
+# ModelClaudeOpus4_8; anthropic-sdk-java AnthropicBeta.kt FAST_MODE_2026_02_01, Model.kt CLAUDE_OPUS_4_8).
+# Signature choice: modelled on anthropic-2026-07-24-opus-4-7-fast-mode-removed; the fast-mode beta header, counted only in
+# files that mention claude-opus-4-8, so ordinary Opus 4.8 use is not flagged. Fast mode on Opus 4.8 needs the beta header
+# (fast-mode.md), so a file using it carries the header.
+# Known limits: a file that uses fast mode on another model and also mentions claude-opus-4-8 is a false positive; a model id
+# set in another file than the betas list is missed. The signatures equal the Opus 4.7 record's (paired in SAME_SURFACE).
+id: anthropic-2026-11-30-opus-4-8-fast-mode-removed
+vendor: Anthropic
+surface: Messages API speed "fast" (fast-mode-2026-02-01 beta) on claude-opus-4-8
+kind: rest
+severity: breaking
+effective: '2026-11-30'
+summary: Fast mode for Claude Opus 4.8 is deprecated and will be removed on November 30, 2026; after that, claude-opus-4-8 requests with speed "fast" return an error
+detail: Deprecated October 30, 2026, with removal on November 30, 2026. After removal, requests to claude-opus-4-8 with speed "fast" will return an error. Anthropic's migration target for fast mode is Claude Opus 5.5.
+signatures:
+- fast-mode-2026-02-01
+- AnthropicBetaFastMode2026_02_01
+- FAST_MODE_2026_02_01
+context:
+- claude-opus-4-8
+- ModelClaudeOpus4_8
+- CLAUDE_OPUS_4_8
+source_url: https://platform.claude.com/docs/en/release-notes/overview.md
+verified: true
+verified_by: claude
+verified_on: '2026-11-01'
+evidence:
+- for Claude Opus 4.8, with removal on November 30, 2026
+- 'requests to claude-opus-4-8 with speed: "fast" will return an error'
+- no longer require the fast-mode-2026-02-01 beta header
+- url: https://platform.claude.com/docs/en/build-with-claude/fast-mode.md
+  text: Fast mode on Claude Opus 4.8 is deprecated
+- url: https://platform.claude.com/docs/en/build-with-claude/fast-mode.md
+  text: To continue using fast mode, migrate to Claude Opus 5.5.
+fix_hint: Before November 30, 2026, either drop speed "fast" (and the fast-mode-2026-02-01 beta) from claude-opus-4-8 requests, or move fast-mode traffic to claude-opus-5-5, which does not need the beta header (requests that still send it keep working). Test on your workload before cutting over; see Anthropic's Opus 5.5 migration guide for changes from Opus 4.8.

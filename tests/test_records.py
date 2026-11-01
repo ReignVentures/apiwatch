@@ -19,6 +19,9 @@ SAME_SURFACE = {
     ("notion-2026-08-13-mcp-query-database-view-dropped", "notion-2026-09-29-mcp-query-database-view-removed"),
     ("stripe-2026-09-30-payment-method-types-removed", "stripe-2026-08-26-intents-payment-method-types-removed"),
     ("stripe-2026-08-26-intents-payment-method-types-removed", "stripe-2026-09-30-payment-method-types-removed"),
+    # Fast-mode beta header, scoped by context to Opus 4.7 files vs Opus 4.8 files.
+    ("anthropic-2026-07-24-opus-4-7-fast-mode-removed", "anthropic-2026-11-30-opus-4-8-fast-mode-removed"),
+    ("anthropic-2026-11-30-opus-4-8-fast-mode-removed", "anthropic-2026-07-24-opus-4-7-fast-mode-removed"),
 }
 
 
