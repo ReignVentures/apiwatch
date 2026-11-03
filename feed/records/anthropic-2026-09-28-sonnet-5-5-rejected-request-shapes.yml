@@ -4,6 +4,7 @@
 # Not covered (no honest signature): thinking blocks tied to the model/conversation (append-only history), advisor pairings (the rejected advisor ids include claude-sonnet-5, which would match every claude-sonnet-5-5 file).
 # SDK type names: ThinkingConfigDisabled(Param), ToolChoiceTool, ToolChoiceParamOfTool are in the migration guide; ToolChoiceAnyParam / ToolChoiceToolParam are the anthropic-sdk-python type names (src/anthropic/types/tool_choice_any_param.py).
 # Raw request forms are matched with the spacing the docs use (JSON/Python '"type": "x"', TypeScript 'type: "x"', PHP "'type' => 'x'"); other spacings are missed.
+# Repair 2026-11-03: the migration guide's computer-use section was reworded (now "such as `computer_20251124` on the Claude API", no longer naming Google Cloud). Replaced the broken evidence item with one migration-guide string for computer_20250124; the Google Cloud claim rests on the release notes (September 28, 2026 entry), not quoted as evidence to keep five items. Independent review 2026-11-03: fix (dropped a sixth evidence item), applied; detail now says the Bedrock beta header and drops "which require"; fix_hint drops the Bedrock-has-no-strict caveat, which none of the three pages state.
 # Known false positives: Amazon Bedrock still accepts computer_20251124 on Sonnet 5.5 (anthropic.claude-sonnet-5-5 matches the context); a file that names claude-sonnet-5-5 but sends these shapes to another model.
 id: anthropic-2026-09-28-sonnet-5-5-rejected-request-shapes
 vendor: Anthropic
@@ -12,7 +13,7 @@ kind: rest
 severity: breaking
 effective: '2026-09-28'
 summary: From its launch on September 28, 2026, Claude Sonnet 5.5 rejects with a 400 any request that sends thinking type disabled, manual budget_tokens, tool_choice any or tool, or the computer_20250124 tool, and on the Claude API and Google Cloud also the computer_20251124 tool
-detail: 'On claude-sonnet-5-5, thinking {"type": "disabled"} and manual budgets ({"type": "enabled", "budget_tokens": N}) return a 400; {"type": "between_tools"} turns off up-front thinking at low, medium or high effort. tool_choice {"type": "any"} or {"type": "tool"} returns a 400 invalid_request_error, including on the token counting endpoint. computer_20250124 is not accepted on any platform, and computer_20251124 returns a 400 on the Claude API and Google Cloud, which require the computer_toolset_20260801 toolset, but is still accepted on Amazon Bedrock.'
+detail: 'On claude-sonnet-5-5, thinking {"type": "disabled"} and manual budgets ({"type": "enabled", "budget_tokens": N}) return a 400; {"type": "between_tools"} turns off up-front thinking at low, medium or high effort. tool_choice {"type": "any"} or {"type": "tool"} returns a 400 invalid_request_error, including on the token counting endpoint. computer_20250124 is not accepted on any platform. computer_20251124 returns a 400 on the Claude API and, per the release notes, Google Cloud; computer use there goes through the computer_toolset_20260801 toolset. Amazon Bedrock still accepts computer_20251124 with the computer-use-2025-11-24 beta header.'
 signatures:
 - computer_20251124
 - computer_20250124
@@ -57,7 +58,7 @@ context:
 source_url: https://platform.claude.com/docs/en/models/sonnet-5-5/whats-new-sonnet-5-5.md
 verified: true
 verified_by: claude
-verified_on: '2026-10-02'
+verified_on: '2026-11-03'
 evidence:
 - url: https://platform.claude.com/docs/en/release-notes/overview.md
   text: September 28, 2026
@@ -65,5 +66,5 @@ evidence:
 - 'tool_choice: type "tool" and "any" are not supported for this model.'
 - 'Manual thinking budgets (`thinking: {"type": "enabled", "budget_tokens": N}`) return a 400 error'
 - url: https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide.md
-  text: '`computer_20251124` returns a 400 error. Claude Sonnet 5.5 doesn''t accept `computer_20250124`'
-fix_hint: 'Before moving a request to claude-sonnet-5-5: replace thinking {"type": "disabled"} with {"type": "between_tools"} (low, medium or high effort only), or use adaptive thinking; drop budget_tokens and set output_config.effort instead; replace tool_choice any/tool with {"type": "auto"} plus strict: true on the tool and say in the prompt when to call it (on Amazon Bedrock, where strict isn''t available, validate the tool input yourself); on the Claude API and Google Cloud move computer use to {"type": "computer_toolset_20260801"} and update the agent loop, and on Bedrock use computer_20251124. Also keep conversation history append-only and use an advisor Claude Sonnet 5.5 accepts.'
+  text: 'It doesn''t accept `computer_20250124` on any platform.'
+fix_hint: 'Before moving a request to claude-sonnet-5-5: replace thinking {"type": "disabled"} with {"type": "between_tools"} (low, medium or high effort only), or use adaptive thinking; drop budget_tokens and set output_config.effort instead; replace tool_choice any/tool with {"type": "auto"} plus strict: true on the tool and say in the prompt when to call it; on the Claude API and Google Cloud move computer use to {"type": "computer_toolset_20260801"}, drop the old tool version''s beta header and update the agent loop (on Amazon Bedrock, computer_20251124 also works). Also keep conversation history append-only and use an advisor Claude Sonnet 5.5 accepts.'

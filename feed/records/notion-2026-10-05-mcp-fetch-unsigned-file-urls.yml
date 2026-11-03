@@ -1,3 +1,7 @@
+# Independent review 2026-11-03: pass.
+# Repair 2026-11-03: Notion split the Supported tools page into category pages; the include_file_urls evidence now
+# cites the Search and read technical reference (tools-search-reference.md). All claims re-checked there, in
+# tools-files-reference.md and the changelog: still supported, no content change.
 # Authored 2026-10-16 from the watch lead (Notion changelog, October 5, 2026), verified against the primary sources:
 # the Notion changelog (https://developers.notion.com/page/changelog.md) and the Supported tools page
 # (https://developers.notion.com/guides/mcp/mcp-supported-tools.md). Independent review (docs/REVIEW.md) on 2026-10-16: pass;
@@ -19,10 +23,10 @@ context: ["notion"]
 source_url: "https://developers.notion.com/page/changelog"
 verified: true
 verified_by: claude
-verified_on: "2026-10-16"
+verified_on: "2026-11-03"
 evidence:
   - "notion-fetch no longer signs file URLs by default"
   - "stable notion-file-block:// references, without signed URLs"
   - "October 5, 2026"
-  - {url: "https://developers.notion.com/guides/mcp/mcp-supported-tools", text: "include_file_urls defaults to false."}
+  - {url: "https://developers.notion.com/guides/mcp/tools-search-reference.md", text: "include_file_urls defaults to false."}
 fix_hint: Where you need file downloads from fetched page markdown, pass include_file_urls true to notion-fetch and read the references map, or call notion-get-file-download-urls with up to 25 notion-file-block:// references copied exactly from the markdown. URLs from notion-get-file-download-urls expire after a few minutes, so request fresh ones when needed. When you edit or copy page markdown, keep the notion-file-block:// references, not the signed URLs.
