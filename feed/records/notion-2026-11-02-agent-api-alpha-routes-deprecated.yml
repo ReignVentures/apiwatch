@@ -1,0 +1,49 @@
+# Drafted 2026-11-04 from the primary sources only: the Notion changelog (https://developers.notion.com/page/changelog.md,
+# "November 2, 2026", "Notion Agent APIs are generally available"), Upgrading from the alpha routes
+# (https://developers.notion.com/guides/notion-agent-apis/upgrading-to-public-beta.md: the alpha -> current route table,
+# thread_id -> session_id, the status changes), and the official SDK source at v5.30.0 (latest tag;
+# https://raw.githubusercontent.com/makenotion/notion-sdk-js/v5.30.0/src/api-endpoint-methods.ts and src/Client.ts).
+# Reviewed 2026-11-04 (see the review line below).
+# Severity: deprecation. Notion labels the alpha routes deprecated and tells callers to migrate; neither page gives a
+# removal date. effective = the announcement date.
+# SDK: @notionhq/client v5.30.0 exposes no alpha methods. Client.agents has query/retrieve/delete/retrieveInsights/
+# updateStatus/updateCreditLimit/batch and Client.sessions the new routes; the alpha endpoint definitions (listAgents,
+# listThreads, queryThreads, listThreadMessages, queryThreadMessages, chatWithAgent) sit in src/api-endpoints/agents.ts but
+# are not wired to Client methods, so SDK callers reach the alpha routes only through notion.request({ path }), which these
+# path signatures cover. No SDK method signatures.
+# Signatures: /chatStream, /threads/query, /messages/query (specific to the alpha); /chat (POST /v1/agents/:agent_id/chat,
+# also written as `agents/${id}/chat` for notion.request; /chat/completions excluded); /threads (GET /v1/agents/:id/threads
+# and /v1/threads/:id/messages; generic, OpenAI Assistants uses /v1/threads);
+# /messages (GET /v1/threads/:thread_id/messages, incl. the SDK-relative `threads/${id}/messages`); /v1/agents (GET list) with "/v1/agents/" excluded so the current POST /v1/agents/query, GET/PATCH/DELETE
+# /v1/agents/{id} and other sub-routes never hit; thread_message and chat.invocation (alpha object types code may compare).
+# Every context group needs "notion" (groups are OR'd over the whole file, so any Notion agents file opens them).
+# 2026-11-04 independent review (docs/REVIEW.md): fix. Facts, date, severity, SDK claims and evidence confirmed. Excludes
+# added for false positives found in a scratch scan: Anthropic /v1/messages, OpenAI /v1/threads URLs, Ollama /api/chat,
+# Mistral /v1/agents, and web framework routes ("/chat", "/threads", "/messages" as route arguments).
+# Known limits: a bare "/v1/agents" base constant later joined with a current sub-route still hits; the SDK-relative list
+# path `path: "agents"` (no slash) is not matched; thread_id, the alpha statuses (pending) and NDJSON parsing have no
+# specific token (thread_id is generic) and are not signed; in a Notion agents file, an OpenAI threads URL built by
+# concatenation ("/messages" joined to a thread id) or another service's /threads, /messages or /chat path not excluded
+# above is a false positive.
+id: notion-2026-11-02-agent-api-alpha-routes-deprecated
+vendor: Notion
+surface: Notion Agent APIs private alpha routes (GET /v1/agents, GET /v1/agents/:agent_id/threads, POST /v1/agents/:agent_id/threads/query, GET /v1/threads/:thread_id/messages, POST /v1/threads/:thread_id/messages/query, POST /v1/agents/:agent_id/chat, POST /v1/agents/:agent_id/chatStream)
+kind: rest
+severity: deprecation
+effective: "2026-11-02"
+summary: 'Notion Agent APIs are generally available and the private alpha routes (agents list, threads, messages, chat, chatStream) are deprecated in favor of sessions and events'
+detail: 'On November 2, 2026, Notion made the Notion Agent APIs generally available and deprecated the private alpha routes. Each has a replacement: GET /v1/agents becomes POST /v1/agents/query (query parameters move into a filter object); GET /v1/agents/:agent_id/threads and POST /v1/agents/:agent_id/threads/query become POST /v1/sessions/query filtered on agent_id; GET /v1/threads/:thread_id/messages and POST /v1/threads/:thread_id/messages/query become POST /v1/sessions/:session_id/events/query; POST /v1/agents/:agent_id/chat becomes POST /v1/sessions with agent_id in the body; POST /v1/agents/:agent_id/chatStream becomes POST /v1/sessions with Accept text/event-stream, sending server-sent events instead of NDJSON lines. Threads and messages become sessions and events, thread_id becomes session_id, and sessions add the statuses queued, in_progress and terminated (queued and in_progress replace the alpha''s pending). No removal date has been announced.'
+signatures: ["/chatStream", "/threads/query", "/messages/query", "/chat", "/threads", "/messages", "/v1/agents", "thread_message", "chat.invocation"]
+context: [["notion", "chatStream"], ["notion", "agents/"], ["notion", "threads/"], ["notion", "/v1/agents"], ["notion", "thread_message"], ["notion", "chat.invocation"]]
+exclude: ["/v1/agents/", "/chat/completions", "/api/chat", "/v1/messages", "api.openai.com/v1/threads", "api.mistral.ai/v1/agents", '("/chat"', "('/chat'", '("/threads"', "('/threads'", '("/messages"', "('/messages'"]
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-11-04"
+evidence:
+  - "November 2, 2026"
+  - "Notion Agent APIs are generally available"
+  - "If you still use the private alpha routes, they're deprecated."
+  - {url: "https://developers.notion.com/guides/notion-agent-apis/upgrading-to-public-beta.md", text: "The alpha routes are deprecated"}
+  - {url: "https://developers.notion.com/guides/notion-agent-apis/upgrading-to-public-beta.md", text: "POST /v1/agents/:agent_id/chatStream"}
+fix_hint: 'Move each alpha call to its replacement in Notion''s Upgrading from the alpha routes guide. Use POST /v1/agents/query for listing agents, POST /v1/sessions/query (filter on agent_id) for threads, POST /v1/sessions/:session_id/events/query for messages (agent replies are agent.message events with content parts), and POST /v1/sessions with agent_id in the body for chat. For chatStream, send POST /v1/sessions with Accept text/event-stream and parse server-sent events instead of NDJSON. Rename thread_id to session_id, and handle the queued, in_progress and terminated statuses (treat unknown statuses as non-terminal). In @notionhq/client use notion.agents.query and the notion.sessions methods.'

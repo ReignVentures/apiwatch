@@ -1,0 +1,40 @@
+# Drafted 2026-11-04 from the primary sources only: the Notion changelog (https://developers.notion.com/page/changelog.md,
+# "November 2, 2026", "Update an agent"), the Update agent status reference
+# (https://developers.notion.com/reference/notion-agent-apis/update-agent-status.md: PATCH /v1/agents/{agent_id}/status,
+# deprecated: true, TypeScript SDK sample notion.agents.updateStatus), the Update an agent reference
+# (https://developers.notion.com/reference/notion-agent-apis/update-agent.md: PATCH /v1/agents/{agent_id}; its SDK sample
+# uses notion.request), and the official SDK source at v5.30.0 (latest tag;
+# https://raw.githubusercontent.com/makenotion/notion-sdk-js/v5.30.0/src/api-endpoint-methods.ts: agents.updateStatus
+# -> PATCH agents/${agent_id}/status; there is no agents.update method).
+# Reviewed 2026-11-04 (see the review line below).
+# Severity: deprecation. Notion labels the endpoint deprecated and tells callers to send status to Update an agent; no
+# removal date is given. effective = the announcement date.
+# Signatures: agents.updateStatus (the SDK method) and /status (the path segment of /v1/agents/{agent_id}/status, also
+# written `agents/${id}/status` for notion.request). /status is generic, so it needs "notion" and an agents/ path in the
+# file; "://status" is excluded so status-page URLs (https://status.…) don't hit.
+# 2026-11-04 independent review (docs/REVIEW.md): fix. Facts, SDK method, fix_hint and evidence confirmed; web framework
+# health routes ("/status" as a route argument) excluded. A GitHub `/commits/${sha}/status` URL in a Notion agents file still hits.
+# Known limits: another /status path in a Notion file that also has an agents/ path would be a false positive; a Python or
+# other non-SDK client that builds the path without a "/status" literal is not matched.
+id: notion-2026-11-02-update-agent-status-deprecated
+vendor: Notion
+surface: Notion Agent APIs Update agent status (PATCH /v1/agents/{agent_id}/status; @notionhq/client notion.agents.updateStatus)
+kind: rest
+severity: deprecation
+effective: "2026-11-02"
+summary: Notion deprecated Update agent status (PATCH /v1/agents/{agent_id}/status); send status to Update an agent (PATCH /v1/agents/{agent_id}) instead
+detail: 'On November 2, 2026, Notion added Update an agent (PATCH /v1/agents/{agent_id}), which changes an agent''s name, description, model, status, or favorite state in one request, and deprecated Update agent status (PATCH /v1/agents/{agent_id}/status, notion.agents.updateStatus in @notionhq/client). Callers should send {"status": "active"} or {"status": "disabled"} to Update an agent instead. The request rules are the same, but the response and one error code change. Update agent status returns agent_id, status, and pause_reason; Update an agent returns the full agent object, so read the ID from id. A status change that isn''t allowed returns 403 status_change_not_allowed from the old endpoint and 403 restricted_resource from Update an agent. No removal date has been announced.'
+signatures: ["agents.updateStatus", "/status"]
+context: [["notion", "updateStatus"], ["notion", "agents/"]]
+exclude: ["://status", '("/status"', "('/status'"]
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-11-04"
+evidence:
+  - "November 2, 2026"
+  - "is now deprecated. Send status to Update an agent instead."
+  - "PATCH /v1/agents/{agent_id}"
+  - {url: "https://developers.notion.com/reference/notion-agent-apis/update-agent-status.md", text: "This endpoint is deprecated."}
+  - {url: "https://developers.notion.com/reference/notion-agent-apis/update-agent-status.md", text: "notion.agents.updateStatus"}
+fix_hint: 'Replace PATCH /v1/agents/{agent_id}/status with PATCH /v1/agents/{agent_id} and the same {"status": "active"} or {"status": "disabled"} body. @notionhq/client v5.30.0 has no method for Update an agent, so replace notion.agents.updateStatus with notion.request({ method: "patch", path: `agents/${agentId}`, body: { status } }). Read the agent ID from id instead of agent_id in the response, and handle 403 restricted_resource where you handled 403 status_change_not_allowed. Sending "disabled" to an agent that is already disabled, other than through the API, returns 403 restricted_resource and rejects the whole request.'
