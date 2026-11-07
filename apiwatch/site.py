@@ -82,6 +82,7 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
     # canonical URLs are the clean paths Cloudflare Pages serves (it 308-redirects "x.html" to "x"), on base_url
     (out / "index.html").write_text(_canonical(_index(recs, by_vendor, today), base, ""))
     (out / "upcoming.html").write_text(_canonical(_upcoming_page(recs, today), base, "upcoming"))
+    (out / "retired.html").write_text(_canonical(_retired_page(recs, today), base, "retired"))
     checkout = pro_checkout_url if CHECKOUT.match(pro_checkout_url or "") else ""
     install = f"https://github.com/apps/{pro_app_slug}/installations/new" if APP_SLUG.match(pro_app_slug or "") else ""
     if not (checkout and install):
@@ -139,6 +140,8 @@ def _canonical(html: str, base: str, path: str) -> str:
 def _sitemap(recs, by_vendor, ids, base, today, views=()) -> str:
     urls = [(base, today.isoformat()), (f"{base}upcoming", today.isoformat()), (f"{base}pro/", today.isoformat()),
             (f"{base}mcp-server", MCP_PAGE_UPDATED), (f"{base}how-it-works", HOW_PAGE_UPDATED)]
+    # the archive changes when a retirement date passes or a past retirement is added: the latest of those
+    urls.append((f"{base}retired", max((_id_lastmod([r], today) for r in retired(recs, today)), default=today.isoformat())))
     # the id index changes when an id page is added or its key date passes: the latest id page change
     urls.append((f"{base}ids/", max((_id_lastmod(rs, today) for _, rs in ids.values()), default=today.isoformat())))
     urls += [(f"{base}vendors/{vendor_slug(v)}", max(r.verified_on or r.effective for r in rs)) for v, rs in by_vendor.items()]
@@ -239,6 +242,7 @@ def _index(recs, by_vendor, today) -> str:
 <p class="meta">{len(recs)} changes · {len(by_vendor)} vendors · updated {_fmt(today.isoformat())}</p>
 <p><a href="upcoming.html">Upcoming retirements and changes in the next {UPCOMING_DAYS} days, by month</a></p>
 <p><a href="ids/index.html">Every model id, by vendor, with its key date</a></p>
+<p><a href="retired.html">Model retirements already in effect, newest first</a></p>
 </section>
 <div class="filters" role="group" aria-label="Filter by severity">{filters}</div>
 {_split(recs, today, 0)}
@@ -980,6 +984,7 @@ def _upcoming_page(recs: list[ChangeRecord], today: date) -> str:
 <p class="lede">Every tracked API, model and MCP change dated from {start} through {end}, by month, soonest first.</p>
 <p class="meta">{n} change{"s" if n != 1 else ""} in the next {UPCOMING_DAYS} days · updated {start}.
 For a deprecation, the date is the key date the vendor names; the record says what happens on it.</p>
+<p><a href="retired.html">Models already retired</a></p>
 </section>
 {listing}
 {CTA}"""
@@ -989,6 +994,45 @@ For a deprecation, the date is the key date the vendor names; the record says wh
     else:
         description = f"No tracked API, model or MCP changes are dated between {start} and {end}."
     return _page("Upcoming API and model retirements and changes", body, description=_clip(description))
+
+
+# ---------- retired ----------
+
+def retired(recs: list[ChangeRecord], today: date) -> list[ChangeRecord]:
+    """Published model retirements in effect on or before today (model records with breaking severity, the ones
+    record and id pages call a retirement), newest first (by id, ascending, on a shared date)."""
+    rs = sorted((r for r in recs if r.published and r.kind == "model" and r.severity == "breaking"
+                 and r.effective <= today.isoformat()), key=lambda r: r.id)
+    return sorted(rs, key=lambda r: r.effective, reverse=True)   # stable: ids stay ascending within a date
+
+
+def _retired_page(recs: list[ChangeRecord], today: date) -> str:
+    rs = retired(recs, today)
+    months: dict[str, list[ChangeRecord]] = defaultdict(list)
+    for r in rs:
+        months[f"{date.fromisoformat(r.effective):%B %Y}"].append(r)
+    if rs:
+        listing = "\n".join(f'<h2>{m}</h2><ul class="recs">' + "".join(_row(r, 0) for r in group) + "</ul>"
+                            for m, group in months.items())
+    else:
+        listing = "<p>No tracked model retirements are in effect yet.</p>"
+    n = len(rs)
+    vendors = sorted({r.vendor for r in rs}, key=str.lower)
+    body = f"""<p class="crumb"><a href="index.html">All changes</a></p>
+<section class="intro">
+<h1>Retired AI models and their shutdown dates</h1>
+<p class="lede">Model retirements that have already taken effect, by month, newest first. Each links to its record.</p>
+<p class="meta">{n} model retirement{"s" if n != 1 else ""} in effect{" from " + escape(", ".join(vendors)) if vendors else ""}.
+<a href="upcoming.html">Retirements and changes in the next {UPCOMING_DAYS} days</a></p>
+</section>
+{listing}
+{CTA}"""
+    if rs:
+        description = (f"{n} AI model retirement{'s' if n != 1 else ''} already in effect from {', '.join(vendors)}, "
+                       f"newest first, by month, each with its shutdown date.")
+    else:
+        description = "No tracked AI model retirements are in effect yet."
+    return _page("Retired AI models and their shutdown dates", body, description=_clip(description))
 
 
 def readme_summary(recs: list[ChangeRecord], today: date, site_url: str, n_next: int = 5,

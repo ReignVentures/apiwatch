@@ -153,8 +153,9 @@ def test_canonical_urls_sitemap_and_robots(tmp_path):
     ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     locs = [e.text for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url/s:loc", ns)]
     assert "https://feed.example.com/records/acme-2026-10-01-soon" in locs and "https://feed.example.com/vendors/beta-mcp" in locs
-    assert not any("draft" in u or "demo" in u for u in locs) and len(locs) == 1 + 1 + 1 + 1 + 1 + 1 + 1 + 2 + 3   # index, upcoming, pro, mcp-server, how-it-works, ids, mcp-servers
+    assert not any("draft" in u or "demo" in u for u in locs) and len(locs) == 1 + 1 + 1 + 1 + 1 + 1 + 1 + 1 + 2 + 3   # index, upcoming, pro, mcp-server, how-it-works, retired, ids, mcp-servers
     assert "https://feed.example.com/upcoming" in locs and "https://feed.example.com/ids/" in locs
+    assert "https://feed.example.com/retired" in locs
     assert "Sitemap: https://feed.example.com/sitemap.xml" in (out / "robots.txt").read_text()
 
 
@@ -394,6 +395,83 @@ def test_upcoming_page_says_so_when_nothing_is_due(tmp_path):
     assert "<p>No tracked changes are dated between Jan 1, 2030 and Jun 30, 2030.</p>" in page
     assert '<ul class="recs">' not in page and page.count('<aside class="cta"') == 1
     assert 'content="No tracked API, model or MCP changes are dated between Jan 1, 2030 and Jun 30, 2030."' in page
+
+
+def retired_fixture(tmp_path) -> Path:
+    """Build date 2026-09-23: past and today's model retirements, plus records that aren't retirements."""
+    d = tmp_path / "retrecs"
+    d.mkdir()
+    rows = [
+        rec("acme-2026-09-23-today", summary="Acme retires today-1", effective="2026-09-23", kind="model",
+            **{**REVIEWED, "verified_on": "2026-09-01"}),
+        rec("beta-2026-08-10-old", vendor="Beta", summary="Beta retired beta-old", effective="2026-08-10", kind="model",
+            **{**REVIEWED, "verified_on": "2026-08-01"}),
+        rec("acme-2026-08-10-same", summary="Acme retired acme-same", effective="2026-08-10", kind="model",
+            **{**REVIEWED, "verified_on": "2026-08-01"}),
+        rec("acme-2026-08-02-old", summary="Acme retired acme-old", effective="2026-08-02", kind="model",
+            **{**REVIEWED, "verified_on": "2026-07-01"}),
+        rec("acme-2025-12-01-older", summary="Acme retired acme-older", effective="2025-12-01", kind="model",
+            **{**REVIEWED, "verified_on": "2026-09-20"}),
+        rec("acme-2026-09-24-future", summary="Acme retires future-1", effective="2026-09-24", kind="model", **REVIEWED),
+        rec("acme-2026-09-01-dep", summary="Acme deprecated dep-1", effective="2026-09-01", kind="model",
+            severity="deprecation", **REVIEWED),
+        rec("acme-2026-09-02-silent", summary="Acme changed silent-1", effective="2026-09-02", kind="model",
+            severity="silent", **REVIEWED),
+        rec("acme-2026-09-03-rest", summary="Acme dropped rest-1", effective="2026-09-03", **REVIEWED),
+        rec("acme-2026-09-04-draft", summary="Acme draft retirement", effective="2026-09-04", kind="model"),
+        rec("example-2026-09-05-demo", summary="Made-up demo", effective="2026-09-05", kind="model",
+            illustrative=True, **REVIEWED),
+    ]
+    for r in rows:
+        (d / f"{r['id']}.yml").write_text(yaml.safe_dump(r))
+    return d
+
+
+def test_retired_page(tmp_path):
+    build(tmp_path, records=retired_fixture(tmp_path), base_url="https://feed.example.com")
+    out = tmp_path / "site"
+    page = (out / "retired.html").read_text()
+    assert "<title>Retired AI models and their shutdown dates · apiwatch</title>" in page
+    assert '<link rel="canonical" href="https://feed.example.com/retired">' in page
+    # only published breaking model records dated today or earlier, newest first, by id on a shared month
+    ids = re.findall(r'href="records/([^"]+)\.html"', page)
+    assert ids == ["acme-2026-09-23-today", "acme-2026-08-10-same", "beta-2026-08-10-old", "acme-2026-08-02-old",
+                   "acme-2025-12-01-older"]
+    assert [m for m in re.findall(r"<h2[^>]*>([^<]+)</h2>", page) if m != "Catch this in CI"] == [
+        "September 2026", "August 2026", "December 2025"]
+    assert "5 model retirements in effect from Acme, Beta." in page
+    assert ('content="5 AI model retirements already in effect from Acme, Beta, newest first, by month, each '
+            'with its shutdown date."') in page
+    assert 'href="upcoming.html"' in page.split("<main>")[1]
+    assert page.count('<aside class="cta"') == 1 and page.rindex("</ul>") < page.index('<aside class="cta"')
+    assert "—" not in page and "–" not in page and "application/ld+json" not in page
+    # linked from the index body and from /upcoming
+    assert 'href="retired.html"' in (out / "index.html").read_text().split("<main>")[1]
+    assert 'href="retired.html"' in (out / "upcoming.html").read_text().split("<main>")[1]
+    # sitemap lastmod: the latest retirement date or review date among the retired records
+    ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    urls = {e.find("s:loc", ns).text: e.find("s:lastmod", ns).text
+            for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url", ns)}
+    assert urls["https://feed.example.com/retired"] == "2026-09-23"
+
+
+def test_retired_page_leaves_out_records_that_failed_the_source_check(tmp_path):
+    build(tmp_path, records=retired_fixture(tmp_path), exclude={"beta-2026-08-10-old"})
+    page = (tmp_path / "site" / "retired.html").read_text()
+    assert "beta-2026-08-10-old" not in page and "4 model retirements in effect from Acme." in page
+
+
+def test_retired_page_with_no_retirements(tmp_path):
+    build(tmp_path, base_url="https://feed.example.com")   # the main fixture has no model records
+    out = tmp_path / "site"
+    page = (out / "retired.html").read_text()
+    assert "<p>No tracked model retirements are in effect yet.</p>" in page and '<ul class="recs">' not in page
+    assert "0 model retirements in effect." in page
+    assert 'content="No tracked AI model retirements are in effect yet."' in page
+    ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    urls = {e.find("s:loc", ns).text: e.find("s:lastmod", ns).text
+            for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url", ns)}
+    assert urls["https://feed.example.com/retired"] == "2026-09-23"
 
 
 def _ld(html: str) -> dict:
