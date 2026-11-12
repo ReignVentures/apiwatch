@@ -300,7 +300,7 @@ export function parseFeed(data, origin = "") {
       repo_context: Array.isArray(a.repo_context) ? a.repo_context : [], scope: str(a.scope),
       verified_on: str(a.verified_on), review: str(a.review),
       record_url: typeof item.url === "string" && item.url ? item.url : `${home}records/${a.id}`,
-      source_url: str(a.source_url), named: strs(a.named),
+      source_url: str(a.source_url), named: strs(a.named), routes_to: str(a.routes_to),
     });
     prepare(records[records.length - 1]);
   }
@@ -438,6 +438,13 @@ function cmp(a, b) {
 export function whatHappens(r, today) {
   const future = r.effective > today;
   const when = fmt(r.effective);
+  if (r.routes_to) {
+    // a reroute: requests keep being answered, by another model (site.py _what_happens)
+    const moved = future ? `will be rerouted to ${r.routes_to} on ${when}` : `has been rerouted to ${r.routes_to} since ${when}`;
+    if (r.severity === "breaking") return moved + (future ? ", and some requests will fail" : ", and some requests fail");
+    if (r.severity === "deprecation") return `is deprecated and ${moved}`;
+    return moved;
+  }
   if (r.severity === "breaking") return future ? `stops working on ${when}` : `stopped working on ${when}`;
   if (r.severity === "silent") return future ? `changes behavior on ${when}` : `changed behavior on ${when}`;
   if (r.severity === "deprecation") {
@@ -519,6 +526,7 @@ const FULL_PROPS = {
   exclude: { type: "array", items: S, description: "Ids the signatures would also match that this change does not cover" },
   context: { type: "array" }, files: { type: "array", items: S }, repo_context: { type: "array" },
   verified_on: S, review: S,
+  routes_to: { type: "string", description: "Model id the vendor serves this model's requests with from the effective date (a reroute); empty if none" },
 };
 const TAIL = { record_urls: { type: "array", items: S }, next_step: S };
 const MATCH = { type: "object", properties: { ...RECORD_PROPS, matched_signature: S },
@@ -536,7 +544,8 @@ function summary(r, today) {
 
 function full(r, today) {
   return { ...summary(r, today), detail: r.detail, signatures: r.signatures, exclude: r.exclude, context: r.context,
-           files: r.files, repo_context: r.repo_context, verified_on: r.verified_on, review: r.review };
+           files: r.files, repo_context: r.repo_context, verified_on: r.verified_on, review: r.review,
+           routes_to: r.routes_to };
 }
 
 function nextStep(feed) {

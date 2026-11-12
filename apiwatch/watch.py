@@ -102,7 +102,15 @@ def to_markdown(text: str) -> str:
         text = _html_to_md(text)
     # MDX changelogs: <Update label="September 2, 2026"> … </Update>
     text = re.sub(r'<Update\b[^>]*\blabel="([^"]+)"[^>]*>', r"\n# \1\n", text)   # a level above the entry's own headings
-    return re.sub(r"</?Update\b[^>]*>", "", text)
+    text = re.sub(r"</?Update\b[^>]*>", "", text)
+    # Markdoc tags (Google's docs since 2026-11): "## November 6, 2026  {% id="11-06-2026" %}" is still a date
+    # heading. A {% table %} block's "* cell" rows would each read as a change, so the block becomes one indented
+    # line of its cells, which joins the bullet or prose around it; other tags ({% callout %}) are layout, not text
+    def _table(m: re.Match) -> str:
+        cells = [_plain(c) for c in re.findall(r"(?m)^\s*[-*]\s+(.*\S)", m.group(1))]
+        return "  " + " / ".join(c for c in cells if c) + "\n"
+    text = re.sub(r"\{%\s*table\b[^\n]{0,500}?%\}\n?(.{0,200000}?)\{%\s*/table\s*%\}\n?", _table, text, flags=re.S)
+    return re.sub(r"\{%[^\n]{0,500}?%\}", "", text)
 
 
 # ---------- dates ----------

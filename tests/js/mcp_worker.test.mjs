@@ -553,3 +553,13 @@ function conforms(v, s) {
   if (s.type === "integer") return Number.isInteger(v);
   return true;
 }
+
+test("rerouted models say rerouted, not stops working (same wording as site.py)", async () => {
+  const { whatHappens } = await import("../../apiwatch/mcp_worker.js");
+  const r = (severity, effective, routes_to = "") => ({ severity, effective, routes_to });
+  assert.equal(whatHappens(r("breaking", "2026-12-01", "m-3"), "2026-11-11"), "will be rerouted to m-3 on Dec 1, 2026, and some requests will fail");
+  assert.equal(whatHappens(r("breaking", "2026-12-01", "m-3"), "2026-12-02"), "has been rerouted to m-3 since Dec 1, 2026, and some requests fail");
+  assert.equal(whatHappens(r("silent", "2026-10-08", "m-3"), "2026-11-11"), "has been rerouted to m-3 since Oct 8, 2026");
+  assert.equal(whatHappens(r("deprecation", "2026-11-06", "m-3"), "2026-11-11"), "is deprecated and has been rerouted to m-3 since Nov 6, 2026");
+  assert.equal(whatHappens(r("breaking", "2026-12-01"), "2026-11-11"), "stops working on Dec 1, 2026");
+});

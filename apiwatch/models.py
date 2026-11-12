@@ -41,6 +41,9 @@ class ChangeRecord:
     repo_context: list = field(default_factory=list)     # like context, but anywhere in the repo incl. manifests
                                                           # (requirements.txt, go.mod…): a pinned preview SDK, say
     exclude: list[str] = field(default_factory=list)  # ids a signature would also match that this change doesn't cover (e.g. a live sibling or the replacement); a hit inside one of these is dropped
+    # model id the vendor serves this model's requests with from `effective` (a reroute, not a shutdown): the one
+    # line answer then says "rerouted to <id>" instead of "stops working"
+    routes_to: str = ""
 
     def __post_init__(self):
         if self.severity not in SEVERITIES:
@@ -50,6 +53,8 @@ class ChangeRecord:
         date.fromisoformat(self.effective)
         if self.verified and not (self.source_url and self.verified_by and self.verified_on and self.evidence):
             raise ValueError(f"{self.id}: verified records need source_url, verified_by, verified_on and evidence")
+        if not isinstance(self.routes_to, str):
+            raise ValueError(f"{self.id}: routes_to must be a model id string")
         for name in ("signatures", "context", "repo_context", "files", "exclude", "evidence"):
             if not isinstance(getattr(self, name), list):
                 raise ValueError(f"{self.id}: {name} must be a list")

@@ -1,0 +1,39 @@
+# Authored 2026-11-12 by an author agent from primary sources only (Markdown twins, fetched 2026-11-12; ai.google.dev
+# redirects to aistudio.google.com/docs): the Gemini API changelog (November 5, 2026 entry), the deprecations page
+# (Gemini Omni Flash models table) and the Gemini Omni Flash model page. Lead #56.
+# Independent review 2026-11-12 by a fresh reviewer agent: pass (silent confirmed: the Omni guide says the routing
+# needs no code changes). Applied its optional edits: Omni guide evidence item and one detail sentence.
+# Severity: silent. From December 3, 2026, requests naming gemini-omni-1.1-flash keep working: Google automatically
+# routes them to gemini-omni-1.2-flash and bills them at Gemini Omni 1.2 Flash rates, so callers get a different
+# model's output and price without an error. The deprecations page puts December 3, 2026 in its shutdown-date column,
+# but the same row says the endpoint routes requests to gemini-omni-1.2-flash, and no Google page says any request
+# will fail, so it is not breaking. The model page shows 1.2 accepting longer input video (15s vs 10s), producing
+# longer output video (3s-15s vs 3s-10s) and adding Text and native audio to the output; none of that is described
+# as a request that fails. Google does not call gemini-omni-1.1-flash deprecated (the model page still lists it
+# as Stable), so the record does not either.
+# Exclude: none. No gemini-omni-1.1-flash-* variants appear on these pages; gemini-omni-1.2-flash and
+# gemini-omni-flash-preview do not match the signature.
+id: google-2026-12-03-gemini-omni-1-1-flash-routed
+vendor: Google
+surface: Gemini API model gemini-omni-1.1-flash
+kind: model
+severity: silent
+effective: '2026-12-03'
+routes_to: gemini-omni-1.2-flash
+summary: From December 3, 2026, Gemini API requests for gemini-omni-1.1-flash are automatically routed to gemini-omni-1.2-flash and billed at Gemini Omni 1.2 Flash rates.
+detail: Google's November 5, 2026 changelog says that effective December 3, 2026, API requests to gemini-omni-1.1-flash will automatically route to gemini-omni-1.2-flash at Gemini Omni 1.2 Flash rates; the same entry announces gemini-omni-1.2-flash as GA. The deprecations page lists gemini-omni-1.1-flash (released August 27, 2026) with December 3, 2026 in the shutdown-date column and gemini-omni-1.2-flash as the replacement, noting that the endpoint routes API requests to gemini-omni-1.2-flash from that date. The Gemini Omni Flash model page lists gemini-omni-1.1-flash as Stable and says it routes to gemini-omni-1.2-flash on December 3, 2026. The model page gives gemini-omni-1.2-flash longer input video (up to 15s for editing, versus 10s), output video of 3s-15s (versus 3s-10s), and native audio and text output; the changelog lists 30% lower video output pricing. Google's Omni guide says the routing needs no code changes, and Google does not say any requests will fail.
+signatures:
+- gemini-omni-1.1-flash
+source_url: https://ai.google.dev/gemini-api/docs/changelog
+verified: true
+verified_by: claude
+verified_on: '2026-11-12'
+evidence:
+- Gemini Omni 1.1 Flash automatic routing notice
+- Effective December 3, 2026, API requests to gemini-omni-1.1-flash
+- will automatically route to gemini-omni-1.2-flash
+- url: https://ai.google.dev/gemini-api/docs/models/gemini-omni-flash.md.txt
+  text: (routes to gemini-omni-1.2-flash on December 3, 2026)
+- url: https://ai.google.dev/gemini-api/docs/omni
+  text: with no code changes required
+fix_hint: Before December 3, 2026, change the model string from gemini-omni-1.1-flash to gemini-omni-1.2-flash, the model Google will route your requests to from that date, and re-test your video generation and editing flows on output and cost, since a different model will answer at Gemini Omni 1.2 Flash rates.

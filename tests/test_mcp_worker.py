@@ -75,7 +75,7 @@ def test_mcp_server_page(tmp_path):
     assert not any(d in html for d in DASHES)
     assert "https://feed.example.com/mcp-server" in (out / "sitemap.xml").read_text()
     for page in (out / "index.html", out / "records" / "acme-2026-10-01-soon.html", out / "404.html"):
-        assert "mcp-server.html\">MCP server</a>" in page.read_text(), page
+        assert "mcp-server\">MCP server</a>" in page.read_text(), page
     # without a base URL the snippets still point at the live server
     (tmp_path / "nobase").mkdir()
     build(tmp_path / "nobase")

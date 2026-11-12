@@ -9,6 +9,10 @@
 # (fast-mode.md), so a file using it carries the header.
 # Known limits: a file that uses fast mode on another model and also mentions claude-opus-4-8 is a false positive; a model id
 # set in another file than the betas list is missed. The signatures equal the Opus 4.7 record's (paired in SAME_SURFACE).
+# Repaired 2026-11-11: Anthropic's fast-mode page added Claude Mythos 5.2 to the fast mode list and reworded the
+# Opus 5 / Opus 4.8 sentence ("Fast mode is in research preview on Claude Opus 5 and deprecated on Claude Opus 4.8").
+# Facts unchanged; the fast-mode.md evidence now quotes the current text.
+# Re-review 2026-11-11 by a fresh reviewer agent: pass, no field corrections.
 id: anthropic-2026-11-30-opus-4-8-fast-mode-removed
 vendor: Anthropic
 surface: Messages API speed "fast" (fast-mode-2026-02-01 beta) on claude-opus-4-8
@@ -28,13 +32,13 @@ context:
 source_url: https://platform.claude.com/docs/en/release-notes/overview.md
 verified: true
 verified_by: claude
-verified_on: '2026-11-01'
+verified_on: '2026-11-11'
 evidence:
 - for Claude Opus 4.8, with removal on November 30, 2026
 - 'requests to claude-opus-4-8 with speed: "fast" will return an error'
 - no longer require the fast-mode-2026-02-01 beta header
 - url: https://platform.claude.com/docs/en/build-with-claude/fast-mode.md
-  text: Fast mode on Claude Opus 4.8 is deprecated
+  text: deprecated on Claude Opus 4.8
 - url: https://platform.claude.com/docs/en/build-with-claude/fast-mode.md
   text: To continue using fast mode, migrate to Claude Opus 5.5.
 fix_hint: Before November 30, 2026, either drop speed "fast" (and the fast-mode-2026-02-01 beta) from claude-opus-4-8 requests, or move fast-mode traffic to claude-opus-5-5, which does not need the beta header (requests that still send it keep working). Test on your workload before cutting over; see Anthropic's Opus 5.5 migration guide for changes from Opus 4.8.

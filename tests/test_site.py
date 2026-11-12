@@ -163,7 +163,32 @@ def test_no_canonical_or_sitemap_without_a_base_url(tmp_path):
     build(tmp_path)
     out = tmp_path / "site"
     assert "canonical" not in (out / "index.html").read_text() and not (out / "sitemap.xml").exists()
-    assert (out / "robots.txt").read_text() == "User-agent: *\nAllow: /\n"
+    assert (out / "robots.txt").read_text() == "User-agent: *\nAllow: /\nDisallow: /mcp$\nDisallow: /mcp/\n"
+    # the local preview (no base_url) keeps .html links, which python -m http.server needs
+    assert 'href="upcoming.html"' in (out / "index.html").read_text()
+
+
+def test_production_build_links_clean_urls_and_skips_email_obfuscation(tmp_path):
+    build(tmp_path, base_url="https://feed.example.com")
+    out = tmp_path / "site"
+    for page in out.rglob("*.html"):
+        html = page.read_text()
+        hrefs = re.findall(r'href="([^"]*)"', html)
+        internal = [h for h in hrefs if not re.match(r"[a-z][a-z0-9+.-]*:|//", h)]
+        assert not [h for h in internal if re.search(r"\.html([#?]|$)", h)], page
+        assert html.count("<!--email_off-->") == html.count("<!--/email_off-->") == 1, page
+    index = (out / "index.html").read_text()
+    assert 'href="upcoming"' in index and 'href="ids/"' in index and 'class="brand" href="./"' in index
+    record = (out / "records" / "acme-2026-10-01-soon.html").read_text()
+    assert 'href="../"' in record and 'href="../vendors/acme"' in record
+    assert 'href="/"' in (out / "404.html").read_text()
+
+
+def test_robots_blocks_only_the_mcp_endpoint(tmp_path):
+    build(tmp_path, base_url="https://feed.example.com")
+    lines = (tmp_path / "site" / "robots.txt").read_text().splitlines()
+    # /mcp answers GET with 405; "$" and "/mcp/" keep the /mcp-server page and /mcp-servers/ history crawlable
+    assert "Disallow: /mcp$" in lines and "Disallow: /mcp/" in lines and "Disallow: /mcp" not in lines
 
 
 def test_every_page_has_the_ci_next_step(tmp_path):
@@ -232,7 +257,7 @@ def test_identifier_pages(tmp_path):
     assert "<title>acme-pro-2.0 retirement: Dec 1, 2026 · apiwatch</title>" in page
     assert '<p class="lede">acme-pro-2.0 stops working on Dec 1, 2026.</p>' in page
     assert 'content="acme-pro-2.0 stops working on Dec 1, 2026. Move to acme-pro-3."' in page
-    assert 'href="../records/acme-2026-12-01-model.html"' in page and page.count('<aside class="cta"') == 1
+    assert 'href="../records/acme-2026-12-01-model"' in page and page.count('<aside class="cta"') == 1
     assert '<link rel="canonical" href="https://feed.example.com/ids/acme-pro-2-0">' in page
     lite = (out / "ids" / "acme-lite.html").read_text()
     assert "<code>acme-lite</code> retirement" in lite and "stopped working on Jun 1, 2026" in lite
@@ -240,7 +265,7 @@ def test_identifier_pages(tmp_path):
     # an id with a past and an upcoming record leads with the upcoming date and lists both
     shared = (out / "ids" / "acme-shared.html").read_text()
     assert '<p class="lede">acme-shared stops working on Dec 1, 2026.</p>' in shared
-    assert "acme-2026-06-01-old.html" in shared and "acme-2026-12-01-model.html" in shared
+    assert "acme-2026-06-01-old" in shared and "acme-2026-12-01-model" in shared
     silent = (out / "ids" / "beta-fast-1.html").read_text()
     assert "<title>beta-fast-1 behavior change: Oct 15, 2026 · apiwatch</title>" in silent
     assert "changes behavior on Oct 15, 2026" in silent
@@ -252,7 +277,7 @@ def test_identifier_pages(tmp_path):
     assert "gamma-old-1 is deprecated, and removal was announced. Key date: Sep 10, 2026." in gone and "still works" not in gone
     # record pages link their signatures to id pages, but not the ones without a page
     record = (out / "records" / "acme-2026-12-01-model.html").read_text()
-    assert '<a href="../ids/acme-pro-2-0.html"><code>acme-pro-2.0</code></a>' in record
+    assert '<a href="../ids/acme-pro-2-0"><code>acme-pro-2.0</code></a>' in record
     assert "<code>output_format={</code>" in record and "ids/output" not in record
     assert "ids/" not in (out / "records" / "acme-2026-09-30-sdk.html").read_text().split("<main>")[1].split('<aside class="cta"')[0]
     ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
@@ -272,28 +297,28 @@ def test_id_index(tmp_path):
     assert "<title>Model retirement and change dates by model id · apiwatch</title>" in page
     assert page.count('<aside class="cta"') == 1 and "application/ld+json" not in page
     # every id page is listed once, under the vendor of the record it leads with, with that page's noun and date
-    links = re.findall(r'<li><a href="([a-z0-9_-]+)\.html">', page)
+    links = re.findall(r'<li><a href="([a-z0-9_-]+)">', page)
     assert sorted(links) == sorted(p.stem for p in (out / "ids").glob("*.html") if p.stem != "index")
     assert len(links) == len(set(links)) == 7
-    assert ('<li><a href="acme-lite.html"><code>acme-lite</code></a> <span class="meta">retirement: '
+    assert ('<li><a href="acme-lite"><code>acme-lite</code></a> <span class="meta">retirement: '
             '<time datetime="2026-06-01">Jun 1, 2026</time></span></li>') in page
     assert '<code>acme-shared</code></a> <span class="meta">retirement: <time datetime="2026-12-01">' in page   # the upcoming date
     assert '<code>beta-fast-1</code></a> <span class="meta">behavior change: <time datetime="2026-10-15">' in page
     assert '<code>beta-model-5</code></a> <span class="meta">deprecation: <time datetime="2027-04-01">' in page
     # vendors alphabetical, ids alphabetical inside each (Index, slugged index-id, is a Beta id)
-    acme, beta, gamma = (page.index(f'<h2><a href="../vendors/{v}.html">') for v in ("acme", "beta", "gamma"))
+    acme, beta, gamma = (page.index(f'<h2><a href="../vendors/{v}">') for v in ("acme", "beta", "gamma"))
     assert acme < beta < gamma
     acme_ids = re.findall(r'<code>([^<]+)</code></a>', page[acme:beta])
     assert acme_ids == ["acme-lite", "acme-pro-2.0", "acme-shared"]
     assert re.findall(r'<code>([^<]+)</code></a>', page[beta:gamma]) == ["beta-fast-1", "beta-model-5", "Index"]
-    assert 'href="index-id.html"' in page
+    assert 'href="index-id"' in page
     assert '<p class="meta">7 model ids · 3 vendors.' in page
     assert 'content="7 AI model ids from Acme, Beta, Gamma, each with' in page
     assert "—" not in page and "–" not in page
     # linked from the index body and the nav on every page; in the sitemap with the latest id page change
     index = (out / "index.html").read_text()
-    assert 'href="ids/index.html"' in index.split("<main>")[1] and '<a href="ids/index.html">Model ids</a>' in index
-    assert 'href="../ids/index.html">Model ids</a>' in (out / "records" / "acme-2026-12-01-model.html").read_text()
+    assert 'href="ids/"' in index.split("<main>")[1] and '<a href="ids/">Model ids</a>' in index
+    assert 'href="../ids/">Model ids</a>' in (out / "records" / "acme-2026-12-01-model.html").read_text()
     ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     urls = {e.findtext("s:loc", namespaces=ns): e.findtext("s:lastmod", namespaces=ns)
             for e in ET.parse(out / "sitemap.xml").getroot().findall("s:url", ns)}
@@ -374,11 +399,11 @@ def test_upcoming_page(tmp_path):
     assert '<link rel="canonical" href="https://feed.example.com/upcoming">' in page
     assert "from Sep 23, 2026 through Mar 22, 2027" in page and "4 changes in the next 180 days" in page
     # today and the last day of the window are in; yesterday, day 181, drafts and illustrative records are out
-    ids = re.findall(r'href="records/([^"]+)\.html"', page)
+    ids = re.findall(r'href="records/([^"]+)"', page)
     assert ids == ["acme-2026-09-23-today", "acme-2026-10-15-silent", "beta-2026-10-15-dep", "acme-2027-03-22-edge"]
     assert [m for m in re.findall(r"<h2[^>]*>([^<]+)</h2>", page) if m != "Catch this in CI"] == [
         "September 2026", "October 2026", "March 2027"]
-    row = page[page.index('href="records/beta-2026-10-15-dep.html"') - 400:]
+    row = page[page.index('href="records/beta-2026-10-15-dep"') - 400:]
     assert '<time datetime="2026-10-15">Oct 15, 2026</time>' in row and ">Beta</a>" in row and ">Deprecation<" in row
     assert ">Beta deprecates beta-2</a>" in row
     assert page.count('<aside class="cta"') == 1 and page.rindex("</ul>") < page.index('<aside class="cta"')
@@ -386,7 +411,7 @@ def test_upcoming_page(tmp_path):
             'change, silent change and deprecation. By month, with what to do."') in page
     assert "—" not in page and "–" not in page
     index = (out / "index.html").read_text()
-    assert 'href="upcoming.html"' in index.split("<main>")[1]          # linked from the index body, not only the nav
+    assert 'href="upcoming"' in index.split("<main>")[1]          # linked from the index body, not only the nav
 
 
 def test_upcoming_page_says_so_when_nothing_is_due(tmp_path):
@@ -434,7 +459,7 @@ def test_retired_page(tmp_path):
     assert "<title>Retired AI models and their shutdown dates · apiwatch</title>" in page
     assert '<link rel="canonical" href="https://feed.example.com/retired">' in page
     # only published breaking model records dated today or earlier, newest first, by id on a shared month
-    ids = re.findall(r'href="records/([^"]+)\.html"', page)
+    ids = re.findall(r'href="records/([^"]+)"', page)
     assert ids == ["acme-2026-09-23-today", "acme-2026-08-10-same", "beta-2026-08-10-old", "acme-2026-08-02-old",
                    "acme-2025-12-01-older"]
     assert [m for m in re.findall(r"<h2[^>]*>([^<]+)</h2>", page) if m != "Catch this in CI"] == [
@@ -442,12 +467,12 @@ def test_retired_page(tmp_path):
     assert "5 model retirements in effect from Acme, Beta." in page
     assert ('content="5 AI model retirements already in effect from Acme, Beta, newest first, by month, each '
             'with its shutdown date."') in page
-    assert 'href="upcoming.html"' in page.split("<main>")[1]
+    assert 'href="upcoming"' in page.split("<main>")[1]
     assert page.count('<aside class="cta"') == 1 and page.rindex("</ul>") < page.index('<aside class="cta"')
     assert "—" not in page and "–" not in page and "application/ld+json" not in page
     # linked from the index body and from /upcoming
-    assert 'href="retired.html"' in (out / "index.html").read_text().split("<main>")[1]
-    assert 'href="retired.html"' in (out / "upcoming.html").read_text().split("<main>")[1]
+    assert 'href="retired"' in (out / "index.html").read_text().split("<main>")[1]
+    assert 'href="retired"' in (out / "upcoming.html").read_text().split("<main>")[1]
     # sitemap lastmod: the latest retirement date or review date among the retired records
     ns = {"s": "http://www.sitemaps.org/schemas/sitemap/0.9"}
     urls = {e.find("s:loc", ns).text: e.find("s:lastmod", ns).text
@@ -689,4 +714,44 @@ def test_how_it_works_page(tmp_path):
     # linked from the footer of every page, relative at depth and root-absolute on the 404 page
     for page in out.rglob("*.html"):
         up = "/" if page.name == "404.html" else "../" * (len(page.relative_to(out).parts) - 1)
-        assert f'href="{up}how-it-works.html">How it works</a>' in page.read_text(), page
+        assert f'href="{up}how-it-works">How it works</a>' in page.read_text(), page
+
+
+def test_rerouted_models_say_rerouted_not_stops_working(tmp_path):
+    d = tmp_path / "routed"
+    d.mkdir()
+    rows = [rec("g-2026-12-01-flash", effective="2026-12-01", kind="model", signatures=["g-flash-2"],
+                routes_to="g-flash-lite-3", **REVIEWED),
+            rec("g-2026-09-01-pro", effective="2026-09-01", kind="model", severity="silent", signatures=["g-pro-2"],
+                routes_to="g-pro-3", **REVIEWED),
+            rec("g-2026-11-01-embed", effective="2026-11-01", kind="model", severity="deprecation",
+                signatures=["g-embed-pre"], routes_to="g-embed", **REVIEWED),
+            rec("g-2026-12-01-gone", effective="2026-12-01", kind="model", signatures=["g-gone-1"], **REVIEWED)]
+    for r in rows:
+        (d / f"{r['id']}.yml").write_text(yaml.safe_dump(r))
+    build(tmp_path, records=d, base_url="https://feed.example.com")
+    ids = tmp_path / "site" / "ids"
+    flash = (ids / "g-flash-2.html").read_text()
+    assert '<p class="lede">g-flash-2 will be rerouted to g-flash-lite-3 on Dec 1, 2026, and some requests will fail.</p>' in flash
+    assert "<title>g-flash-2 rerouting: Dec 1, 2026 · apiwatch</title>" in flash and "stops working" not in flash
+    assert "g-pro-2 has been rerouted to g-pro-3 since Sep 1, 2026." in (ids / "g-pro-2.html").read_text()
+    assert "g-embed-pre is deprecated and will be rerouted to g-embed on Nov 1, 2026." in (ids / "g-embed-pre.html").read_text()
+    assert "g-gone-1 stops working on Dec 1, 2026." in (ids / "g-gone-1.html").read_text()   # no routes_to: unchanged
+    items = {i["_apiwatch"]["id"]: i["_apiwatch"] for i in json.loads((tmp_path / "site" / "feed.json").read_text())["items"]}
+    assert items["g-2026-12-01-flash"]["routes_to"] == "g-flash-lite-3" and items["g-2026-12-01-gone"]["routes_to"] == ""
+
+
+def test_routes_to_must_be_a_string():
+    import pytest
+    from apiwatch.models import ChangeRecord
+    with pytest.raises(ValueError, match="routes_to"):
+        ChangeRecord(id="x", vendor="v", surface="s", kind="model", severity="silent", effective="2026-01-01",
+                     summary="s", routes_to=["a"])
+
+
+def test_a_rerouted_model_is_not_a_retirement():
+    from apiwatch.models import ChangeRecord
+    common = dict(vendor="G", surface="s", kind="model", severity="breaking", effective="2026-09-01", summary="s", **REVIEWED)
+    gone, moved = ChangeRecord(id="g-gone", **common), ChangeRecord(id="g-moved", routes_to="g-new", **common)
+    assert site.retired([gone, moved], date(2026, 10, 1)) == [gone]
+    assert site._kind_list([gone, moved]) == "model retirement and breaking change"

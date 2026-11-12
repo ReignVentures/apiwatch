@@ -5,6 +5,7 @@ surface: Gemini API model gemini-3-pro-preview
 kind: model
 severity: silent
 effective: '2026-03-09'
+routes_to: gemini-3.1-pro-preview
 summary: Gemini 3 Pro Preview was shut down on the Gemini API March 9, 2026; the gemini-3-pro-preview id now points to gemini-3.1-pro-preview.
 detail: Google announced on February 26, 2026 that gemini-3-pro-preview would shut down March 9, 2026. The changelog for that date says the model was shut down and the id now points to gemini-3.1-pro-preview, which is also the listed replacement.
 signatures:

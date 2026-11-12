@@ -6,6 +6,7 @@ surface: speech-to-text model grok-voice-transcribe-1.0
 kind: model
 severity: silent
 effective: "2026-10-02"
+routes_to: grok-voice-transcribe-2.0
 summary: grok-voice-transcribe-1.0 reached end of life on October 2, 2026; requests to the slug are routed to grok-voice-transcribe-2.0 at the same price
 detail: "xAI's release notes say grok-voice-transcribe-1.0 is deprecated and reaches end of life on October 2, 2026, and that all requests to that slug are routed to grok-voice-transcribe-2.0 at the same price, with higher accuracy. The source does not say requests fail, so calls keep working but are served by a different model, and transcripts may differ. grok-voice-transcribe-2.0 was announced in the September release notes and is the default model; the Speech to Text docs now list only grok-voice-transcribe-2.0."
 signatures: ["grok-voice-transcribe-1.0"]

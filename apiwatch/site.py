@@ -125,10 +125,34 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
     (out / "how-it-works.html").write_text(_canonical(_how_page(), base, "how-it-works"))
     (out / "feed.xml").write_text(_atom(recs, base, today))
     _mcp_history_pages(out, views, base, today)
-    (out / "robots.txt").write_text("User-agent: *\nAllow: /\n" + (f"Sitemap: {base}sitemap.xml\n" if base else ""))
+    # /mcp is POST only (a GET gets 405), which Search Console files as "Blocked due to other 4xx issue". "$" keeps
+    # the rule off /mcp-server and /mcp-servers/, which a bare "Disallow: /mcp" prefix would also block
+    (out / "robots.txt").write_text("User-agent: *\nAllow: /\nDisallow: /mcp$\nDisallow: /mcp/\n"
+                                    + (f"Sitemap: {base}sitemap.xml\n" if base else ""))
     if base:
         (out / "sitemap.xml").write_text(_sitemap(recs, by_vendor, ids, base, today, views))
+        for page in out.rglob("*.html"):
+            page.write_text(_for_production(page.read_text()))
     return len(recs), out / "index.html"
+
+
+_HREF = re.compile(r'href="(?![a-z][a-z0-9+.-]*:|//)([^"#?]*?)(index)?\.html([#?][^"]*)?"')
+
+
+def _for_production(html: str) -> str:
+    """Deployed build only (base_url set), so the local http.server preview keeps its working .html links.
+    Internal links go to the clean URLs Cloudflare Pages serves ("x.html" 308s to "x", "d/index.html" to "d/"), so
+    crawlers don't log every link as "Page with redirect". The body is wrapped in Cloudflare's email_off ... /email_off markers
+    so email obfuscation doesn't rewrite mailto links to /cdn-cgi/l/email-protection, which 404s for crawlers."""
+    def clean(m: re.Match) -> str:
+        path, index, rest = m.group(1), m.group(2), m.group(3) or ""
+        if index and (not path or path.endswith("/")):
+            path = path or "./"
+        elif index:
+            path += "index"
+        return f'href="{path}{rest}"'
+    html = _HREF.sub(clean, html)
+    return html.replace("<body>", "<body>\n<!--email_off-->", 1).replace("</body>", "<!--/email_off-->\n</body>", 1)
 
 
 def _canonical(html: str, base: str, path: str) -> str:
@@ -399,6 +423,16 @@ def _what_happens(r: ChangeRecord, today: date) -> tuple[str, str]:
     works with removal announced (its date may be the removal date, so no verb is tied to it)."""
     future = r.effective > today.isoformat()
     when = _fmt(r.effective)
+    if r.routes_to:
+        # a reroute: requests keep being answered, by another model, so "stops working" would overstate it.
+        # breaking still says some requests fail (the reason it is breaking), deprecation still says deprecated
+        moved = (f"will be rerouted to {r.routes_to} on {when}" if future
+                 else f"has been rerouted to {r.routes_to} since {when}")
+        if r.severity == "breaking":
+            return (moved + (", and some requests will fail" if future else ", and some requests fail"), "rerouting")
+        if r.severity == "deprecation":
+            return ("is deprecated and " + moved, "rerouting")
+        return (moved, "rerouting")
     if r.severity == "breaking":
         return (f"stops working on {when}" if future else f"stopped working on {when}",
                 "retirement" if r.kind == "model" else "breaking change")
@@ -999,10 +1033,11 @@ For a deprecation, the date is the key date the vendor names; the record says wh
 # ---------- retired ----------
 
 def retired(recs: list[ChangeRecord], today: date) -> list[ChangeRecord]:
-    """Published model retirements in effect on or before today (model records with breaking severity, the ones
-    record and id pages call a retirement), newest first (by id, ascending, on a shared date)."""
+    """Published model retirements in effect on or before today (model records with breaking severity and no
+    routes_to, the ones record and id pages call a retirement; a reroute is not one), newest first (by id,
+    ascending, on a shared date)."""
     rs = sorted((r for r in recs if r.published and r.kind == "model" and r.severity == "breaking"
-                 and r.effective <= today.isoformat()), key=lambda r: r.id)
+                 and not r.routes_to and r.effective <= today.isoformat()), key=lambda r: r.id)
     return sorted(rs, key=lambda r: r.effective, reverse=True)   # stable: ids stay ascending within a date
 
 
@@ -1077,7 +1112,8 @@ def _kind_list(rs: list[ChangeRecord], prefix: str = "") -> str:
     """"model retirements, breaking change and deprecations": the kinds present, prefixed; "" when none are"""
     counts: dict[str, int] = defaultdict(int)
     for r in rs:
-        counts["retirement" if (r.severity == "breaking" and r.kind == "model") else r.severity] += 1
+        # a rerouted model (routes_to) is a breaking change, not a retirement
+        counts["retirement" if (r.severity == "breaking" and r.kind == "model" and not r.routes_to) else r.severity] += 1
     names = [label + ("s" if counts[key] > 1 else "") for key, label in _KINDS if counts[key]]
     if not names:
         return ""
@@ -1127,7 +1163,7 @@ def _json_feed(recs, base) -> str:
                           # ids and -suffixes the record's text names, which the scanner counts as the record's
                           "named": sorted(record_names(" ".join([r.summary, r.detail, r.surface]))) if r.kind == "model" else [],
                           "severity": r.severity, "kind": r.kind, "surface": r.surface, "effective": r.effective,
-                          "signatures": r.signatures, "exclude": r.exclude, "context": r.context,
+                          "signatures": r.signatures, "exclude": r.exclude, "context": r.context, "routes_to": r.routes_to,
                           "files": r.files, "repo_context": r.repo_context, "verified": r.verified,
                           "verified_by": r.verified_by, "verified_on": r.verified_on,
                           "review": "human" if r.human_verified else "ai"},

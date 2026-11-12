@@ -14,12 +14,18 @@
 # Exclude: gemini-3.5-flash-lite is a live, separate model (deprecations page lists no shutdown date or replacement).
 # No other gemini-3.5-flash-* ids appear on these pages. gemini-flash-latest pointed at gemini-3.5-flash on May 19,
 # 2026, but no source says what it points at now, so it is not an alias here.
+# Repaired 2026-11-11: Google moved the Gemini docs to aistudio.google.com/docs (ai.google.dev 301s there). The
+# deprecations Markdown twin now writes table rows as bullet lists, so the quoted "| ... |" row is gone, and the 3.5
+# guide now writes "Direct replacement for Gemini 3.5 Flash" (model name, not id). Facts unchanged (row still:
+# gemini-3.5-flash, May 19, 2026, N/A, gemini-3.6-flash). Both evidence items now quote the current text.
+# Re-review 2026-11-11 by a fresh reviewer agent: pass, no field corrections.
 id: google-2026-10-08-gemini-3-5-flash-routed
 vendor: Google
 surface: Gemini API model gemini-3.5-flash
 kind: model
 severity: silent
 effective: '2026-10-08'
+routes_to: gemini-3.6-flash
 summary: Since October 8, 2026, Google routes Gemini API requests for the deprecated gemini-3.5-flash to gemini-3.6-flash.
 detail: The October 8, 2026 Gemini API changelog says gemini-3.5-flash is deprecated and has been replaced by gemini-3.6-flash, that it is no longer available to select in Google AI Studio, and that API requests to gemini-3.5-flash are automatically routed to gemini-3.6-flash. Requests keep working, but they are served by a different model. The deprecations page lists gemini-3.5-flash (released May 19, 2026) with shutdown date N/A and gemini-3.6-flash as the replacement, and says the endpoint is not shutting down. Google's Gemini 3.5 guide describes gemini-3.6-flash as a direct replacement with reduced token usage and lower output pricing.
 signatures:
@@ -27,15 +33,15 @@ signatures:
 source_url: https://ai.google.dev/gemini-api/docs/changelog
 verified: true
 verified_by: claude
-verified_on: '2026-10-13'
+verified_on: '2026-11-11'
 evidence:
 - October 8, 2026
 - Gemini 3.5 Flash deprecation
 - API requests to `gemini-3.5-flash` are automatically routed to `gemini-3.6-flash`
 - url: https://ai.google.dev/gemini-api/docs/deprecations.md.txt
-  text: 'gemini-3.5-flash | May 19, 2026 | N/A | gemini-3.6-flash'
+  text: automatically routes API requests to gemini-3.6-flash
 - url: https://ai.google.dev/gemini-api/docs/whats-new-gemini-3.5.md.txt
-  text: Direct replacement for gemini-3.5-flash with reduced token usage
+  text: Direct replacement for Gemini 3.5 Flash with reduced token usage
 fix_hint: Change the model string from gemini-3.5-flash to gemini-3.6-flash (the model already serving your requests) or gemini-3.8-flash, which the changelog also names. Re-run your evals on outputs, token usage and cost, since results already come from gemini-3.6-flash.
 exclude:
 - gemini-3.5-flash-lite

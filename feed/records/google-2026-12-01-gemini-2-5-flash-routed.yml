@@ -1,0 +1,44 @@
+# Authored 2026-11-11 from primary sources only (Markdown twins, fetched 2026-11-11; ai.google.dev 301s to
+# aistudio.google.com/docs): the Gemini API changelog (November 2, 2026 entry), the deprecations page (Gemini 2.5
+# Flash models) and "What's new in Gemini 3.6" (migration and API changes). Found as a gap in the 2026-11-11 record
+# re-review (docs/GAPS.md), not from a lead.
+# Severity: breaking. The deprecations page lists a December 1, 2026 shutdown date (within 180 days), and from that
+# date requests are served by gemini-3.5-flash-lite under Gemini 3 rules: a request whose last non-empty turn is a
+# model turn returns HTTP 400, and temperature, top_p and top_k are ignored. Other requests keep working on a
+# different model at a different price.
+# Exclude: every other gemini-2.5-flash-* id on Google's pages (lite, the dated previews, image, native audio, TTS,
+# exp). gemini-2.5-flash-lite is not deprecated. No alias: gemini-flash-latest moved to gemini-3-flash-preview on
+# January 21, 2026.
+# Independent review 2026-11-11 by a fresh reviewer agent: pass. Applied its one wording edit: detail now attributes
+# the HTTP 400 and ignored-parameter rules to Google's API changes guide instead of stating them as our inference.
+id: google-2026-12-01-gemini-2-5-flash-routed
+vendor: Google
+surface: Gemini API model gemini-2.5-flash
+kind: model
+severity: breaking
+effective: '2026-12-01'
+routes_to: gemini-3.5-flash-lite
+summary: From December 1, 2026, Gemini API requests for the deprecated gemini-2.5-flash are routed to gemini-3.5-flash-lite, where prefilled model turns return HTTP 400.
+detail: Google's November 2, 2026 changelog says gemini-2.5-flash is deprecated and no longer selectable in Google AI Studio, and that effective December 1, 2026 all API requests to gemini-2.5-flash will automatically route to gemini-3.5-flash-lite and be billed at Gemini 3.5 Flash-Lite rates. The deprecations page lists gemini-2.5-flash (released June 17, 2025) with a shutdown date of December 1, 2026 and gemini-3.5-flash-lite as the replacement, and says API access to the 2.5 models is limited to users who have actively used them. Google lists breaking API changes for the move, including function calling and thought_signature validation, thinking_level replacing thinking_budget, and removed sampling parameters and prefilled model turns. Google's API changes guide says that on gemini-3.5-flash-lite and later models a request whose last non-empty turn is a model turn returns HTTP 400 and temperature, top_p and top_k are ignored, and Google tells callers to review these breaking changes before December 1, 2026. gemini-2.5-flash-lite is not deprecated.
+signatures:
+- gemini-2.5-flash
+source_url: https://ai.google.dev/gemini-api/docs/deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-11-11'
+evidence:
+- API requests to gemini-2.5-flash will automatically route to gemini-3.5-flash-lite
+- December 1, 2026
+- url: https://ai.google.dev/gemini-api/docs/changelog.md.txt
+  text: Gemini 2.5 Flash deprecation
+- url: https://ai.google.dev/gemini-api/docs/changelog.md.txt
+  text: removed sampling parameters and prefilled model turns
+- url: https://ai.google.dev/gemini-api/docs/whats-new-gemini-3.6.md.txt
+  text: If the last non-empty turn in the request is a model turn
+fix_hint: Before December 1, 2026, change the model string from gemini-2.5-flash to gemini-3.5-flash-lite, as Google directs, and follow its migration guide. Replace thinking_budget with thinking_level, remove temperature, top_p, top_k and candidate_count, stop prefilling model turns (those requests return HTTP 400), and re-test function calling. Re-run your evals on quality and cost, since a different model will answer. gemini-2.5-flash-lite is not deprecated if you need to stay on a 2.5 model.
+exclude:
+- gemini-2.5-flash-lite
+- gemini-2.5-flash-preview
+- gemini-2.5-flash-image
+- gemini-2.5-flash-native-audio
+- gemini-2.5-flash-exp

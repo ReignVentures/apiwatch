@@ -11,18 +11,18 @@ Vendors retire models, rename MCP tools, and change API behavior on a schedule y
 
 ## What it caught
 
-The feed holds 137 reviewed changes, each checked against the vendor's own page.
+The feed holds 140 reviewed changes, each checked against the vendor's own page.
 
-* **By vendor:** Google 33, Stripe 30, OpenAI 26, Anthropic 17, Notion MCP 8, Notion 6, Atlassian Rovo MCP 4, GitHub MCP Server 4, xAI 4, Twilio 3, Greenhouse 1, MCP specification 1
-* **By severity:** breaking 100, silent 25, deprecation 12
+* **By vendor:** Google 36, Stripe 30, OpenAI 26, Anthropic 17, Notion MCP 8, Notion 6, Atlassian Rovo MCP 4, GitHub MCP Server 4, xAI 4, Twilio 3, Greenhouse 1, MCP specification 1
+* **By severity:** breaking 102, silent 26, deprecation 12
 
 Next dates ([everything in the next 180 days](https://apiwatch.reignventures.co/upcoming)):
 
 * **Nov 30, 2026**, Anthropic, breaking: [Anthropic will retire Claude Sonnet 4.5 (claude-sonnet-4-5-20250929) on the Claude API on November 30, 2026; requests to it will fail after that date.](https://apiwatch.reignventures.co/records/anthropic-2026-11-30-claude-sonnet-4-5-model)
 * **Nov 30, 2026**, Anthropic, breaking: [Fast mode for Claude Opus 4.8 is deprecated and will be removed on November 30, 2026; after that, claude-opus-4-8 requests with speed "fast" return an error](https://apiwatch.reignventures.co/records/anthropic-2026-11-30-opus-4-8-fast-mode-removed)
 * **Nov 30, 2026**, OpenAI, breaking: [OpenAI reusable prompt objects and the v1/prompts API shut down November 30, 2026](https://apiwatch.reignventures.co/records/openai-2026-11-30-prompts-api-shutdown)
-* **Dec 1, 2026**, OpenAI, breaking: [OpenAI will remove gpt-image-1-mini, gpt-image-1.5 and chatgpt-image-latest from the API on December 1, 2026; the replacement is gpt-image-2.5-sunburst or gpt-image-2.5-flare.](https://apiwatch.reignventures.co/records/openai-2026-12-01-gpt-image-model-deprecations)
-* **Dec 11, 2026**, OpenAI, breaking: [OpenAI will remove the older GPT-5 and o3 snapshots (gpt-5-2025-08-07, gpt-5-mini/nano-2025-08-07, gpt-5-pro-2025-10-06, o3-2025-04-16, o3-pro-2025-06-10) on December 11, 2026.](https://apiwatch.reignventures.co/records/openai-2026-12-11-gpt-5-and-o3-model-deprecations)
+* **Dec 1, 2026**, Google, breaking: [From December 1, 2026, Gemini API requests for the deprecated gemini-2.5-flash are routed to gemini-3.5-flash-lite, where prefilled model turns return HTTP 400.](https://apiwatch.reignventures.co/records/google-2026-12-01-gemini-2-5-flash-routed)
+* **Dec 1, 2026**, Google, breaking: [From December 1, 2026, Gemini API requests for the deprecated gemini-2.5-pro are routed to gemini-3.8-flash, where prefilled model turns return HTTP 400.](https://apiwatch.reignventures.co/records/google-2026-12-01-gemini-2-5-pro-routed)
 
 ## GitHub Action
 

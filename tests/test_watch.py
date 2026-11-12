@@ -251,3 +251,48 @@ def test_run_reports_unparseable_sources_and_bad_since(tmp_path):
     assert errs == ["notion: parsed 0 entries (page layout changed?)"]
     with pytest.raises(ValueError):
         watch.run(tmp_path / "recs", ["notion"], None, "2026-9-1", TODAY, lambda u: "")
+
+
+def test_markdoc_tags_dont_hide_date_headings():
+    # Google's changelog since 2026-11: Markdoc id tags on headings, {% table %} blocks, irregular bullet indents
+    text = """# Gemini API release notes
+
+## November 6, 2026  {% id="11-06-2026" %}
+
+*   **Gemini Embedding 2 Preview deprecation**:
+  [`gemini-embedding-2-preview`](/docs/models/gemini-embedding-2-preview) is
+  [deprecated](/docs/deprecations#embedding-deprecated-models). Effective
+  November 6, 2026, API requests to `gemini-embedding-2-preview` route to
+  [`gemini-embedding-2`](/docs/models/gemini-embedding-2).
+
+## November 2, 2026  {% id="11-02-2026" %}
+
+*     **Gemini 2.5 Pro deprecation**: `gemini-2.5-pro` is deprecated.
+*     **Gemini 2.5 Flash deprecation**: `gemini-2.5-flash` is deprecated.
+
+{% table %}
+  * Model
+{% /table %}
+"""
+    es = watch.parse_doc(text, "google", "Google", "https://ai.google.dev/gemini-api/docs/changelog.md.txt", date(2026, 11, 11))
+    assert [e.date for e in es] == ["2026-11-06", "2026-11-02", "2026-11-02"]
+    assert es[0].title.startswith("Gemini Embedding 2 Preview deprecation")
+    assert not any("{%" in e.text or "id=" in e.title for e in es)
+
+
+def test_markdoc_table_rows_are_not_separate_changes():
+    text = """## November 9, 2026  {% id="11-09-2026" %}
+
+*   **Model retirements**: these models are retired.
+
+{% table %}
+* Model
+* Status
+---
+* `widget-1`
+* Deprecated
+{% /table %}
+"""
+    es = watch.parse_doc(text, "google", "Google", "https://ai.google.dev/x", date(2026, 11, 11))
+    assert len(es) == 1 and es[0].title.startswith("Model retirements")
+    assert "widget-1" in es[0].text and "Deprecated" in es[0].text and "{%" not in es[0].text

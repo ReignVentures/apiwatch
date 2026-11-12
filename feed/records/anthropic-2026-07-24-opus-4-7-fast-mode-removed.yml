@@ -5,6 +5,10 @@
 # Re-reviewed 2026-10-20 (docs/REVIEW.md): the fast-mode page dropped the "Claude Opus 4.8 (claude-opus-4-8)" list line. Facts unchanged; fast-mode evidence now quotes the page's current supported-model sentences.
 # Edited 2026-11-01 (night shift): fix_hint no longer names claude-opus-4-8 (its fast mode is deprecated, removal November 30, 2026, release notes October 30, 2026) or claude-opus-5; it names claude-opus-5-5, the target the release notes give. Fresh review 2026-11-01: fix (quoted the fix_hint so it parses); facts and evidence confirmed.
 # Repaired 2026-11-10 (night shift): the fast-mode page now reads "Fast mode is available on Claude Fable 5.2 and Claude Opus 5.5", which took the old evidence string off; evidence updated to the new sentence. Fresh review 2026-11-10: pass, facts unchanged.
+# Repaired 2026-11-11: Anthropic's fast-mode page added Claude Mythos 5.2 to the fast mode list and reworded the
+# Opus 5 / Opus 4.8 sentence ("Fast mode is in research preview on Claude Opus 5 and deprecated on Claude Opus 4.8").
+# Facts unchanged; the fast-mode.md evidence now quotes the current text.
+# Re-review 2026-11-11 by a fresh reviewer agent: pass, no field corrections.
 id: anthropic-2026-07-24-opus-4-7-fast-mode-removed
 vendor: Anthropic
 surface: Messages API speed "fast" (fast-mode-2026-02-01 beta) on claude-opus-4-7
@@ -24,13 +28,13 @@ context:
 source_url: https://platform.claude.com/docs/en/release-notes/overview.md
 verified: true
 verified_by: claude
-verified_on: '2026-11-10'
+verified_on: '2026-11-11'
 evidence:
 - We've removed fast mode for Claude Opus 4.7
 - they do not fall back to standard speed
 - with removal on July 24, 2026
 - url: https://platform.claude.com/docs/en/build-with-claude/fast-mode.md
-  text: Fast mode is available on Claude Fable 5.2 and Claude Opus 5.5
+  text: available on Claude Fable 5.2, Claude Mythos 5.2, and Claude Opus 5.5
 - url: https://platform.claude.com/docs/en/build-with-claude/fast-mode.md
-  text: Claude Opus 5 and Claude Opus 4.8 is in research preview
+  text: deprecated on Claude Opus 4.8
 fix_hint: 'Either drop speed "fast" (and the fast-mode-2026-02-01 beta) from claude-opus-4-7 requests, or move fast-mode traffic to claude-opus-5-5, which does not need the beta header. Do not move it to claude-opus-4-8; fast mode there is deprecated and will be removed on November 30, 2026.'

@@ -38,6 +38,10 @@ The reviewer opens `source_url` and checks every field.
     changes that only apply when an SDK or API version is pinned. Prefer the canonical dependency form
     `dep:<ecosystem>:<name>@<major>.` (`dep:pypi:stripe@16.`, `dep:npm:@stripe/stripe-js@10.`), which matches
     any manifest or lockfile layout; an API version string needs a digit before it (`0.endive`…`9.endive`).
+- **routes_to.** When the vendor keeps answering requests for the model with a single other model from
+  `effective` (a reroute, not a shutdown), set `routes_to` to that model id, quoted from the source. The site and MCP
+  answer then say "rerouted to <id>" instead of "stops working". Leave it out when slugs go to several models.
+  One evidence string must name the target, so the daily check notices if the vendor changes it.
 - **fix_hint.** It must be correct and safe, and it must not promise behavior the source doesn't describe. Don't point
   to a replacement that is itself retired or scheduled to retire; name the current target.
 - **evidence.** Two to five short strings copied verbatim from the source. Each should be twelve words
