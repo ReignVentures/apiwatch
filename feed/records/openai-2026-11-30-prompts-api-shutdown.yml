@@ -2,6 +2,8 @@
 # 2026-10-06 field-test scope fix: v1/prompts matched open-webui's own router (prefix='/api/v1/prompts'). An app's /api/v1/prompts route is excluded,
 # Independent review: the exclude alone removes it, so no context requirement (a v1/prompts call through a base-URL variable still matches).
 # OpenAI's own path (api.openai.com/v1/prompts) has no /api/ segment, so it still matches.
+# 2026-11-13 repair: OpenAI restructured the deprecations page; evidence re-quoted from the current tables. Feature table row (Nov 30, 2026; notice Jun 3, 2026) and the migration guide confirm the date, scope and migration path; no field changes.
+# 2026-11-13 independent review (docs/REVIEW.md, fresh agent) of the repair: PASS; apiwatch check ok.
 id: openai-2026-11-30-prompts-api-shutdown
 vendor: OpenAI
 surface: v1/prompts API and reusable prompt objects
@@ -15,10 +17,10 @@ exclude: ["/api/v1/prompts"]
 source_url: "https://developers.openai.com/api/docs/deprecations"
 verified: true
 verified_by: claude
-verified_on: "2026-09-24"
+verified_on: "2026-11-13"
 evidence:
-  - "2026-06-03: Reusable prompts"
-  - "Nov 30, 2026"
+  - "Nov 30, 2026 | /v1/prompts and reusable prompt objects"
+  - "Move prompt content into your application code"
   - {"url": "https://developers.openai.com/api/docs/guides/prompting/migrate-from-prompt-object.md", "text": "v1/prompts is scheduled to shut down on November 30, 2026"}
   - {"url": "https://developers.openai.com/api/docs/guides/prompting/migrate-from-prompt-object.md", "text": "pmpt_123"}
 fix_hint: Copy each referenced prompt's content and variables into versioned code, build the messages there and pass them as input; add a test that renders each prompt locally.

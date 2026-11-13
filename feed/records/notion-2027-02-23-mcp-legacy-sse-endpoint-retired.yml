@@ -1,0 +1,32 @@
+# Authored 2026-11-13 from lead #64 (Notion changelog, "Notion MCP is retiring its legacy SSE endpoint"), from the primary
+# sources: the Notion changelog (https://developers.notion.com/page/changelog.md; the entry sits under the
+# November 11, 2026 heading as served on 2026-11-13, not November 10 as the lead said) and the "Migrate from the legacy SSE
+# endpoint" section of Get started with Notion MCP (https://developers.notion.com/guides/mcp/get-started-with-mcp.md).
+# 2026-11-13 independent review (docs/REVIEW.md, fresh agent): PASS, no field edits. Confirmed the Nov 11, 2026 changelog
+# heading, the Feb 23, 2027 shutdown date and severity; the scanner hits the SSE URL in .mcp.json, Claude Desktop mcp-remote args,
+# TOML and a Python constant, and not mcp.notion.com/mcp. apiwatch check ok.
+# Severity: breaking. A dated shutdown (February 23, 2027) within 180 days of authoring; clients still on the SSE URL lose
+# the connection then. effective = the shutdown date.
+# Signatures: the legacy URL mcp.notion.com/sse as it appears in MCP client configs (.mcp.json, TOML, mcp-remote args, code
+# constants). It can't match mcp.notion.com/mcp (different path) and needs no context. Known limits: a client that builds the
+# URL from parts (host and "/sse" in separate strings) is missed; an unrelated path that merely starts with /sse- or /sse/
+# on mcp.notion.com would also hit (none is documented). Config files in formats the scanner doesn't read (e.g. Markdown) are skipped.
+id: notion-2027-02-23-mcp-legacy-sse-endpoint-retired
+vendor: Notion MCP
+surface: Notion MCP legacy SSE endpoint https://mcp.notion.com/sse (HTTP with Server-Sent Events transport)
+kind: mcp
+severity: breaking
+effective: "2027-02-23"
+summary: Notion MCP retires its legacy SSE endpoint (https://mcp.notion.com/sse) on February 23, 2027; clients must switch to Streamable HTTP at https://mcp.notion.com/mcp
+detail: Notion will retire the legacy HTTP with Server-Sent Events (SSE) endpoint of Notion MCP, https://mcp.notion.com/sse, on February 23, 2027, when the legacy endpoint shuts down. Clients that connect to it must switch their transport to Streamable HTTP and their URL to https://mcp.notion.com/mcp before that date.
+signatures: ["mcp.notion.com/sse"]
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-11-13"
+evidence:
+  - "Notion MCP is retiring its legacy SSE endpoint"
+  - "If your client connects to https://mcp.notion.com/sse"
+  - "The legacy endpoint shuts down on February 23, 2027"
+  - {url: "https://developers.notion.com/guides/mcp/get-started-with-mcp.md", text: "change the transport from SSE to Streamable HTTP"}
+fix_hint: Before February 23, 2027, change the Notion server in each MCP client config from the SSE transport to Streamable HTTP and replace the URL https://mcp.notion.com/sse with https://mcp.notion.com/mcp; save, sign in again if prompted, and check that the client lists Notion tools. If the client only offers SSE, update it to a version that supports Streamable HTTP.
