@@ -289,6 +289,58 @@ def test_identifier_pages(tmp_path):
     assert urls["https://feed.example.com/ids/gamma-old-1"] == "2026-09-10"   # passed date is later than the review
 
 
+def test_id_pages_link_ids_named_in_the_fix_and_same_date_ids(tmp_path):
+    d = tmp_path / "x"
+    d.mkdir()
+    rows = [
+        rec("acme-2026-12-01-a", summary="a", effective="2026-12-01", kind="model",
+            signatures=["old-1", "Old-1", "old-1-mini", "old-1<b>", "output_format={"],
+            fix_hint="Switch old-1 to new-2 and old-1-mini to new-2-mini. Don't move to new-2-mini-2025 or "
+                     "my_new-2 or new-2x; not <new-2>. Later: new-2.", **REVIEWED),
+        rec("acme-2027-01-01-b", summary="b", effective="2027-01-01", kind="model", signatures=["new-2", "new-2-mini"],
+            fix_hint="Move new-2 & new-2-mini to new-3.", **REVIEWED),
+        rec("acme-2026-11-01-scoped", summary="c", effective="2026-11-01", kind="model", signatures=["new-2x"],
+            context=["acme"], **REVIEWED),
+    ]
+    for r in rows:
+        (d / f"{r['id']}.yml").write_text(yaml.safe_dump(r))
+    build(tmp_path, records=d, base_url="https://feed.example.com")
+    out = tmp_path / "site"
+    page = (out / "ids" / "old-1.html").read_text()
+    item = page.split('<ul class="idrecs">')[1].split("</ul>")[0]
+    # whole tokens that are exactly an id page's spelling are linked; never the page itself, never a longer id,
+    # a scoped record's id (no page), or a token glued to other id characters
+    assert ('<strong>What to do:</strong> Switch old-1 to <a href="new-2"><code>new-2</code></a> and '
+            '<a href="old-1-mini"><code>old-1-mini</code></a> to <a href="new-2-mini"><code>new-2-mini</code></a>. '
+            "Don&#x27;t move to new-2-mini-2025 or my_new-2 or new-2x; not &lt;"
+            '<a href="new-2"><code>new-2</code></a>&gt;. Later: <a href="new-2"><code>new-2</code></a>.') in item
+    # other id pages from the same record share its date; the page's own spellings and non-id signatures are left out
+    assert '<p class="meta">Also in this record (same date): <a href="old-1-mini"><code>old-1-mini</code></a>.</p>' in item
+    assert 'href="old-1"' not in item and "output_format" not in item and "old-1&lt;b" not in item
+    # escaping holds and the meta description stays plain text
+    assert 'content="old-1 stops working on Dec 1, 2026. Switch old-1 to new-2 and' in page
+    mini = (out / "ids" / "old-1-mini.html").read_text().split('<ul class="idrecs">')[1].split("</ul>")[0]
+    assert "and old-1-mini to" in mini and 'href="old-1-mini"' not in mini
+    assert 'Also in this record (same date): <a href="old-1"><code>old-1</code></a>' in mini
+    # a record with one id page has no same date line; the "&" in a hint is escaped next to links
+    new = (out / "ids" / "new-3.html")
+    assert not new.exists()
+    two = (out / "ids" / "new-2.html").read_text().split('<ul class="idrecs">')[1].split("</ul>")[0]
+    assert 'Move new-2 &amp; <a href="new-2-mini"><code>new-2-mini</code></a> to new-3.' in two
+    assert 'Also in this record (same date): <a href="new-2-mini"><code>new-2-mini</code></a>.' in two
+    # an id followed by ":" or "/" is still that id (ft:old-1-mini:x names the base model)
+    rows[1]["fix_hint"] = "Fine-tunes (ft:old-1-mini:org) and models/old-1 go too."
+    (d / "acme-2027-01-01-b.yml").write_text(yaml.safe_dump(rows[1]))
+    build(tmp_path, records=d)   # no base URL: local preview hrefs keep .html
+    two = (out / "ids" / "new-2.html").read_text()
+    assert ('(ft:<a href="old-1-mini.html"><code>old-1-mini</code></a>:org) and '
+            'models/<a href="old-1.html"><code>old-1</code></a> go too.') in two
+    # the new links land on pages that exist
+    for p in (out / "ids").glob("*.html"):
+        for href in re.findall(r'<a href="([a-z0-9_-]+)"><code>', p.read_text()):
+            assert (out / "ids" / f"{href}.html").exists(), (p.name, href)
+
+
 def test_id_index(tmp_path):
     build(tmp_path, records=id_fixture(tmp_path), base_url="https://feed.example.com")
     out = tmp_path / "site"

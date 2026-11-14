@@ -110,7 +110,7 @@ def build(records_dir: Path, out: Path, today: date | None = None, base_url: str
                   description=_vendor_description(vendor, rs, today), head=feed_link), base, f"vendors/{slug}"))
         (out / "vendors" / f"{slug}.xml").write_text(_atom(rs, base, today, vendor=vendor))
     for slug, (sigs, rs) in ids.items():
-        (out / "ids" / f"{slug}.html").write_text(_canonical(_id_page(sigs, rs, today, base, slug), base, f"ids/{slug}"))
+        (out / "ids" / f"{slug}.html").write_text(_canonical(_id_page(sigs, rs, today, base, slug, id_links), base, f"ids/{slug}"))
     # id_slug never returns "index", so this can't collide with an id page; Cloudflare Pages serves it at /ids/
     (out / "ids" / "index.html").write_text(_canonical(_id_index(ids, today), base, "ids/"))
     # served for any unknown path at any depth, so links are root-absolute. Without it Cloudflare Pages
@@ -451,8 +451,40 @@ def _lead(rs: list[ChangeRecord], today: date) -> ChangeRecord:
     return upcoming[0] if upcoming else rs[-1]
 
 
-def _id_page(sigs: list[str], rs: list[ChangeRecord], today: date, base: str = "", slug: str = "") -> str:
+_TOKEN = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]*[A-Za-z0-9_]|[A-Za-z0-9_]")   # "_" kept in: my_gpt-4 is one token
+
+
+def _linked_hint(text: str, id_links: dict[str, str], own: str) -> str:
+    """fix_hint, escaped, with each whole token that is exactly an id page's spelling linked to that page (never to
+    the page it is on). Whole tokens only, so gpt-4o inside gpt-4o-2024-05-13 is not linked. The link says nothing
+    about the id: the hint's own words do ("Don't move to X" stays a warning), so no "replacement" label is added."""
+    parts, last = [], 0
+    for m in _TOKEN.finditer(text):
+        slug = id_links.get(m.group())
+        if slug and slug != own:
+            parts.append(escape(text[last:m.start()]))
+            parts.append(f'<a href="{slug}.html"><code>{escape(m.group())}</code></a>')
+            last = m.end()
+    parts.append(escape(text[last:]))
+    return "".join(parts)
+
+
+def _same_date(r: ChangeRecord, id_links: dict[str, str], own: str) -> str:
+    """The other id pages this record names, which share its date, in signature order."""
+    seen, links = {own}, []
+    for s in r.signatures:
+        slug = id_links.get(s)
+        if slug and slug not in seen:
+            seen.add(slug)
+            links.append(f'<a href="{slug}.html"><code>{escape(s)}</code></a>')
+    return f'<p class="meta">Also in this record (same date): {", ".join(links)}.</p>' if links else ""
+
+
+def _id_page(sigs: list[str], rs: list[ChangeRecord], today: date, base: str = "", slug: str = "",
+             id_links: dict[str, str] | None = None) -> str:
     sig = sigs[0]
+    slug = slug or id_slug(sig)
+    id_links = id_links or {}
     lead = _lead(rs, today)
     what, noun = _what_happens(lead, today)
     answer = f"{sig} {what}."
@@ -462,7 +494,8 @@ def _id_page(sigs: list[str], rs: list[ChangeRecord], today: date, base: str = "
         f'<li><p><strong>{escape(r.vendor)}</strong> {_badges(r)}</p>'
         f'<p><code>{escape(sig)}</code> {escape(_what_happens(r, today)[0])}. '
         f'<a href="../records/{r.id}.html">{escape(r.summary)}</a></p>'
-        f'<p><strong>What to do:</strong> {escape(r.fix_hint) or "See the record."}</p></li>' for r in rs)
+        f'<p><strong>What to do:</strong> {_linked_hint(r.fix_hint, id_links, slug) or "See the record."}</p>'
+        f'{_same_date(r, id_links, slug)}</li>' for r in rs)
     body = f"""<p class="crumb"><a href="../index.html">All changes</a> / <a href="../vendors/{vendor_slug(lead.vendor)}.html">{escape(lead.vendor)}</a></p>
 <article class="record">
 <h1><code>{escape(sig)}</code> {noun}</h1>
@@ -473,7 +506,7 @@ def _id_page(sigs: list[str], rs: list[ChangeRecord], today: date, base: str = "
 {CTA}"""
     title = f"{sig} {noun}: {_fmt(lead.effective)}"
     description = " ".join(f"{answer} {lead.fix_hint}".split())
-    ld = _article_ld(title, description, sig, f"{base}ids/{slug or id_slug(sig)}" if base else "",
+    ld = _article_ld(title, description, sig, f"{base}ids/{slug}" if base else "",
                      _id_lastmod(rs, today), [r.source_url for r in rs])
     return _page(title, body, depth=1, description=_clip(description), head=_jsonld(ld))
 
