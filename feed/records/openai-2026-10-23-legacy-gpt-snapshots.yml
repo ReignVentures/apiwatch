@@ -8,6 +8,8 @@
 # 2026-10-08: the deprecations page now names gpt-image-2.5-sunburst or gpt-image-2.5-flare (not gpt-image-2) as the gpt-image-1 substitute; detail updated. Other rows unchanged.
 # 2026-10-08 independent review (docs/REVIEW.md): pass. The gpt-image-1 row (October 23, 2026) lists gpt-image-2.5-sunburst or gpt-image-2.5-flare; all other covered ids, dates and substitutes match the table.
 # 2026-10-27 night shift: the check found ft-babbage-002 and ft-davinci-002 gone from the page. The table no longer lists the ft-gpt-3.5-turbo, ft-gpt-4, ft-gpt-4.1-nano, ft-babbage-002 or ft-davinci-002 rows; it says fine-tuned versions follow their base models' schedule. Dropped ft:babbage-002 and ft:davinci-002 (their bases are not in this table) and their evidence; added gpt-4-1106-preview. Fresh review: fix (surface lists gpt-4o-2024-05-13), applied.
+# 2026-11-14 night shift: OpenAI restructured the deprecations page into one table per section; "October 23, 2026" and the "Fine-tuned versions of these models follow..." sentence are gone. Evidence re-quoted from the Past deprecations rows (Oct 23, 2026) and the historical note on fine-tunes. Ids, date and substitutes still match the table; detail now says o1-pro goes to gpt-5.6-sol with reasoning.mode: pro (as the row says) and that fine-tunes "followed" the base schedule (past tense, as the note says). The gpt-5.6-* and gpt-image-2.5-* substitutes are not scheduled to retire on the page. verified reset to false pending review.
+# 2026-11-14 independent review (docs/REVIEW.md, fresh agent): pass. apiwatch check ok.
 id: openai-2026-10-23-legacy-gpt-snapshots
 vendor: OpenAI
 surface: gpt-3.5-turbo, gpt-4, gpt-4-1106-preview, gpt-4-turbo, gpt-4.1-nano, gpt-4o-2024-05-13, o1, o1-pro, o3-mini, o4-mini, gpt-image-1 and fine-tunes
@@ -15,7 +17,7 @@ kind: model
 severity: breaking
 effective: '2026-10-23'
 summary: Old GPT-3.5/4/o-series snapshots shut down October 23, 2026, including the bare aliases gpt-4, gpt-3.5-turbo, o1, o3-mini, o4-mini
-detail: Announced April 22, 2026. Includes the unversioned aliases, so code that never pinned a snapshot still breaks. Covered ids are gpt-3.5-turbo(-0125), gpt-4(-0613), gpt-4-1106-preview, gpt-4-turbo(-2024-04-09), gpt-4.1-nano(-2025-04-14), gpt-4o-2024-05-13, gpt-image-1, o1(-2024-12-17), o1-pro(-2025-03-19), o3-mini(-2025-01-31), o4-mini(-2025-04-16), plus -completions variants and ft-o4-mini-2025-04-16. OpenAI says fine-tuned versions of these models follow the same shutdown schedule as their base models. Substitutes are gpt-5.6-sol, gpt-5.6-terra, gpt-5.6-luna, and, for gpt-image-1, gpt-image-2.5-sunburst or gpt-image-2.5-flare.
+detail: 'Announced April 22, 2026. Includes the unversioned aliases, so code that never pinned a snapshot still breaks. Covered ids are gpt-3.5-turbo(-0125), gpt-4(-0613), gpt-4-1106-preview, gpt-4-turbo(-2024-04-09), gpt-4.1-nano(-2025-04-14), gpt-4o-2024-05-13, gpt-image-1, o1(-2024-12-17), o1-pro(-2025-03-19), o3-mini(-2025-01-31), o4-mini(-2025-04-16), plus -completions variants and ft-o4-mini-2025-04-16. OpenAI says fine-tuned versions of these legacy models followed the same shutdown schedule as their base models. Substitutes are gpt-5.6-sol (o1-pro: gpt-5.6-sol with reasoning.mode: pro), gpt-5.6-terra, gpt-5.6-luna, and, for gpt-image-1, gpt-image-2.5-sunburst or gpt-image-2.5-flare.'
 signatures:
 - gpt-4
 - o1
@@ -49,11 +51,11 @@ exclude:
 source_url: https://developers.openai.com/api/docs/deprecations
 verified: true
 verified_by: claude
-verified_on: '2026-10-27'
+verified_on: '2026-11-14'
 evidence:
-- October 23, 2026
-- gpt-4-0613-completions
-- o1-pro-2025-03-19
-- gpt-4-1106-preview
-- Fine-tuned versions of these models follow the same shutdown schedule
-fix_hint: Switch to the listed substitute. Fine-tunes of these models shut down on the same date, and OpenAI restricts creating new fine-tuning jobs, so confirm you can re-train before planning on it. Check config files and env vars too, where bare aliases like "gpt-4" tend to live.
+- Oct 23, 2026 | gpt-3.5-turbo-0125, gpt-3.5-turbo, gpt-3.5-turbo-completions | gpt-5.6-terra
+- Oct 23, 2026 | gpt-4-0613, gpt-4, gpt-4-0613-completions, gpt-4-completions | gpt-5.6-sol
+- Oct 23, 2026 | gpt-4-1106-preview | gpt-5.6-sol
+- 'o1-pro-2025-03-19, o1-pro | gpt-5.6-sol (reasoning.mode: pro)'
+- Fine-tuned versions of the legacy GPT models shut down in October 2026
+fix_hint: Switch to the listed substitute (for o1-pro, gpt-5.6-sol with reasoning.mode set to pro). Fine-tunes of these models shut down on the same date, and OpenAI restricts creating new fine-tuning jobs, so confirm you can re-train before planning on it. Check config files and env vars too, where bare aliases like "gpt-4" tend to live.

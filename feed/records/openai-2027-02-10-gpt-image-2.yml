@@ -1,0 +1,29 @@
+# DRAFT (from `apiwatch ingest` openai-2027-02-10-upcoming-deprecations, 2026-11-13), rewritten by the 2026-11-14 night shift from the deprecations page's Upcoming deprecations table. Awaiting independent review (docs/REVIEW.md).
+# Bare gpt-image-2 is listed in the row itself, so it is a signature. The token-aware scanner already skips gpt-image-2.5-* and gpt-image-2.6-* (a dot and digit continue the version), and accepts the dated snapshot gpt-image-2-2026-04-21; the four newer image ids are also listed in exclude as a guard. The gpt-image-2 model page lists gpt-image-2-2026-04-21 as its only snapshot.
+# Breaking: Feb 10, 2027 is within 180 days of 2026-11-14.
+# 2026-11-14 independent review (docs/REVIEW.md, fresh agent): pass. apiwatch check ok.
+id: openai-2027-02-10-gpt-image-2
+vendor: OpenAI
+surface: model gpt-image-2 (gpt-image-2-2026-04-21)
+kind: model
+severity: breaking
+effective: '2027-02-10'
+summary: OpenAI will remove gpt-image-2 from the API on February 10, 2027; the replacement is gpt-image-2.6-sunburst or gpt-image-2.6-flare.
+detail: Announced November 10, 2026. OpenAI's deprecations page lists a February 10, 2027 shutdown for gpt-image-2 and its snapshot gpt-image-2-2026-04-21, with gpt-image-2.6-sunburst or gpt-image-2.6-flare as the recommended replacement. The page says fine-tuned versions of the listed models follow the same shutdown schedule as their base models.
+signatures:
+- gpt-image-2
+- gpt-image-2-2026-04-21
+exclude:
+- gpt-image-2.5-sunburst
+- gpt-image-2.5-flare
+- gpt-image-2.6-sunburst
+- gpt-image-2.6-flare
+source_url: https://developers.openai.com/api/docs/deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-11-14'
+evidence:
+- Feb 10, 2027 | gpt-image-2, gpt-image-2-2026-04-21 | Deprecated
+- gpt-image-2-2026-04-21 | Deprecated | gpt-image-2.6-sunburst or gpt-image-2.6-flare
+- Nov 10, 2026
+fix_hint: Switch image calls to gpt-image-2.6-sunburst or gpt-image-2.6-flare before February 10, 2027, and re-check output quality and cost on your own prompts.

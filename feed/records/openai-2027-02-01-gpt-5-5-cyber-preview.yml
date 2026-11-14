@@ -1,0 +1,26 @@
+# DRAFT (from `apiwatch ingest` openai-2027-02-01-upcoming-deprecations, 2026-11-13), rewritten by the 2026-11-14 night shift from the deprecations page's Upcoming deprecations table. Awaiting independent review (docs/REVIEW.md).
+# The row names no specific replacement ("The most capable cyber model available to you."); the fix_hint names the two cyber models OpenAI's model pages list, without claiming which is most capable. gpt-5.5-cyber-preview has no model page (404 on 2026-11-14).
+# Breaking: Feb 1, 2027 is within 180 days of 2026-11-14.
+# 2026-11-14 independent review (docs/REVIEW.md, fresh agent): fix (fix_hint access wording for gpt-6-cyber vs gpt-5.6-cyber), applied. apiwatch check ok.
+id: openai-2027-02-01-gpt-5-5-cyber-preview
+vendor: OpenAI
+surface: model gpt-5.5-cyber-preview
+kind: model
+severity: breaking
+effective: '2027-02-01'
+summary: OpenAI will remove gpt-5.5-cyber-preview from the API on February 1, 2027; migrate to the most capable cyber model available to you.
+detail: Announced November 5, 2026. OpenAI's deprecations page lists a February 1, 2027 shutdown for gpt-5.5-cyber-preview, and as the recommended replacement "the most capable cyber model available to you". The page says preview models may be retired with much shorter notice than other models.
+signatures:
+- gpt-5.5-cyber-preview
+source_url: https://developers.openai.com/api/docs/deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-11-14'
+evidence:
+- Feb 1, 2027 | gpt-5.5-cyber-preview | Deprecated
+- gpt-5.5-cyber-preview | Deprecated | The most capable cyber model available to you.
+- url: https://developers.openai.com/api/docs/models/gpt-6-cyber.md
+  text: 'Model ID: gpt-6-cyber'
+- url: https://developers.openai.com/api/docs/models/gpt-5.6-cyber.md
+  text: 'Model ID: gpt-5.6-cyber'
+fix_hint: Replace gpt-5.5-cyber-preview with the most capable cyber model your organization can use before February 1, 2027. OpenAI's model pages list gpt-6-cyber, which needs Daybreak Red access and approval for your organization, and gpt-5.6-cyber, which needs Daybreak Red enabled for the project that sends requests. Re-run your evals on the new model.

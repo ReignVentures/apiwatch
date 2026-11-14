@@ -1,0 +1,29 @@
+# DRAFT (from `apiwatch ingest` openai-2027-01-14-upcoming-deprecations, 2026-11-13), rewritten by the 2026-11-14 night shift from the deprecations page's Upcoming deprecations table. Awaiting independent review (docs/REVIEW.md).
+# The Jan 14, 2027 rows list dated snapshots only (under the names GPT-4o, GPT-4o mini, GPT-4.1, GPT-4.1 mini), so the bare aliases gpt-4o, gpt-4o-mini, gpt-4.1 and gpt-4.1-mini are not signatures. Their model pages mark them "Status: Deprecated" and list no snapshot outside this row (gpt-4o-2024-05-13 already shut down Oct 23, 2026), but the page gives no shutdown date for the alias ids themselves. Reviewer: decide whether that is enough to add them.
+# Breaking: Jan 14, 2027 is within 180 days of 2026-11-14.
+# 2026-11-14 independent review (docs/REVIEW.md, fresh agent): pass (fine-tune evidence trimmed to 12 words; bare gpt-4o/gpt-4o-mini/gpt-4.1/gpt-4.1-mini left out: the page dates only the snapshots). apiwatch check ok.
+id: openai-2027-01-14-gpt-4o-gpt-4-1-snapshots
+vendor: OpenAI
+surface: models GPT-4o (gpt-4o-2024-08-06, gpt-4o-2024-11-20), GPT-4o mini (gpt-4o-mini-2024-07-18), GPT-4.1 (gpt-4.1-2025-04-14), GPT-4.1 mini (gpt-4.1-mini-2025-04-14)
+kind: model
+severity: breaking
+effective: '2027-01-14'
+summary: OpenAI will remove the GPT-4o, GPT-4o mini, GPT-4.1 and GPT-4.1 mini snapshots from the API on January 14, 2027; the replacement is gpt-6-luna.
+detail: 'Announced October 14, 2026. OpenAI''s deprecations page lists a January 14, 2027 shutdown for GPT-4o (gpt-4o-2024-08-06, gpt-4o-2024-11-20), GPT-4o mini (gpt-4o-mini-2024-07-18), GPT-4.1 (gpt-4.1-2025-04-14) and GPT-4.1 mini (gpt-4.1-mini-2025-04-14), with gpt-6-luna as the recommended replacement for each. The page says fine-tuned versions of the listed models follow the same shutdown schedule as their base models. gpt-4o-2024-05-13 and gpt-4.1-nano are not part of this change; they shut down October 23, 2026.'
+signatures:
+- gpt-4o-2024-08-06
+- gpt-4o-2024-11-20
+- gpt-4o-mini-2024-07-18
+- gpt-4.1-2025-04-14
+- gpt-4.1-mini-2025-04-14
+source_url: https://developers.openai.com/api/docs/deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-11-14'
+evidence:
+- Jan 14, 2027 | GPT-4o (gpt-4o-2024-08-06, gpt-4o-2024-11-20) | Deprecated | gpt-6-luna
+- Jan 14, 2027 | GPT-4o mini (gpt-4o-mini-2024-07-18) | Deprecated | gpt-6-luna
+- Jan 14, 2027 | GPT-4.1 (gpt-4.1-2025-04-14) | Deprecated | gpt-6-luna
+- Jan 14, 2027 | GPT-4.1 mini (gpt-4.1-mini-2025-04-14) | Deprecated | gpt-6-luna
+- Fine-tuned versions of the models listed above
+fix_hint: Switch these snapshots to gpt-6-luna before January 14, 2027 and re-run your evals; fine-tunes built on them shut down the same day. Check config files and env vars too, and move model ids to config so the next retirement is a one-line change.

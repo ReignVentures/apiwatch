@@ -3,24 +3,27 @@
 # /v1/videos/text2video, image2video, multi-image2video and motion-control. Files must now mention openai or sora, and those paths are excluded.
 # Known limit: a /v1/videos call through a base-URL variable in a file that never names openai or sora is missed.
 # replicate.video('openai/sora-2') stays a hit: Replicate's openai/sora-2 page carries OpenAI's September 24, 2026 discontinuation notice.
+# 2026-11-14 night shift: OpenAI restructured the deprecations page; the "2026-03-24: Sora 2 video generation models and Videos API" heading and the "removal from the API on September 24, 2026" sentence are gone. Evidence re-quoted from the Past deprecations rows (Sep 24, 2026: Videos API, sora-2, sora-2-pro and three snapshots, each "No one-to-one replacement", notice Mar 24, 2026). Summary and detail now say "no one-to-one replacement" as the table does (was "no replacement" / "no recommended replacement"). The Videos API reference item still loads and now carries a shutdown banner. Ids, date and scope unchanged. verified reset to false pending review.
+# 2026-11-14 independent review (docs/REVIEW.md, fresh agent): pass. apiwatch check ok.
 id: openai-2026-09-24-sora-2-videos-api-shutdown
 vendor: OpenAI
 surface: Videos API and sora-2 / sora-2-pro models
 kind: rest
 severity: breaking
 effective: "2026-09-24"
-summary: OpenAI Videos API and all Sora 2 models shut down September 24, 2026, with no replacement
-detail: Announced March 24, 2026. The Videos API, the aliases sora-2 and sora-2-pro, and snapshots sora-2-2025-10-06, sora-2-2025-12-08, and sora-2-pro-2025-10-06 are removed. OpenAI lists no recommended replacement.
+summary: OpenAI Videos API and all Sora 2 models shut down September 24, 2026, with no one-to-one replacement
+detail: Announced March 24, 2026. The Videos API, the aliases sora-2 and sora-2-pro, and snapshots sora-2-2025-10-06, sora-2-2025-12-08, and sora-2-pro-2025-10-06 are removed. OpenAI lists no one-to-one replacement.
 signatures: ["sora-2", "/v1/videos"]
 context: ["openai", "sora"]
 exclude: ["res/v1/videos", "/v1/videos/text2video", "/v1/videos/image2video", "/v1/videos/multi-image2video", "/v1/videos/motion-control"]
 source_url: "https://developers.openai.com/api/docs/deprecations"
 verified: true
 verified_by: claude
-verified_on: "2026-09-24"
+verified_on: '2026-11-14'
 evidence:
-  - "2026-03-24: Sora 2 video generation models and Videos API"
-  - "removal from the API on September 24, 2026"
+  - "Sep 24, 2026 | Videos API | No one-to-one replacement | Mar 24, 2026"
+  - "Sep 24, 2026 | sora-2-pro | No one-to-one replacement"
+  - "Sep 24, 2026 | sora-2-2025-12-08"
   - "sora-2-pro-2025-10-06"
   - {"url": "https://developers.openai.com/api/reference/resources/videos/methods/create.md", "text": "api.openai.com/v1/videos"}
 fix_hint: Pick another video provider or remove the feature; put video generation behind an interface so the provider swap is one module.
