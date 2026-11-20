@@ -1,0 +1,32 @@
+# Written by Claude on 2026-11-19 from the deprecations page (Feature and endpoint deprecations row, notice Jun 3, 2026), the Evals guide's deprecation notice, the Promptfoo migration cookbook it links, and the Evals API reference (Create eval, POST /evals; Python client.evals.create and client.evals.runs.create).
+# The deprecations row reads "Nov 30, 2026 | Evals dashboard, API, and graders for eval workflows | Read-only". The column is "Shutdown date"; the Evals guide says Evals went read-only on October 31, 2026 and the platform shuts down on November 30, 2026, so "Read-only" is the current status and Nov 30 is the shutdown, not a read-only switch. Reads stop then too, so every Evals API call is signed, not only the create calls.
+# Not covered: fine-tuning graders (/v1/fine_tuning/alpha/graders); the row sends those to the fine-tuning timeline (see openai-2027-01-06-fine-tuning-job-creation-ends). Go/Java call forms (client.Evals.New) are missed. context "openai" is there because evals.create / evals.list are plain names other eval libraries could use; an Azure OpenAI file (AzureOpenAI) also opens it, and the source covers only OpenAI's platform.
+# Independent review (docs/REVIEW.md) on 2026-11-19: fix: detail no longer says create/update/run calls "already stopped working"; the sources say only that the platform went read-only on October 31 and shuts down (API included) on November 30, so the detail now says writes should not be expected to succeed. Dates, severity, signatures (confirmed in the Evals API reference and Python/TypeScript examples), context, fix_hint and evidence checked against the deprecations page, the Evals guide and the Promptfoo cookbook; no other changes.
+id: openai-2026-11-30-evals-platform-shutdown
+vendor: OpenAI
+surface: Evals API (/v1/evals, evals and eval runs) and the Evals dashboard
+kind: rest
+severity: breaking
+effective: "2026-11-30"
+summary: OpenAI shuts down the Evals platform, including the Evals API, on November 30, 2026; it has been read-only since October 31, 2026, and OpenAI recommends migrating to Promptfoo
+detail: "Notice date June 3, 2026. OpenAI's deprecations page lists the Evals dashboard, API, and graders for eval workflows with a November 30, 2026 shutdown date, status Read-only, and Migrate to Promptfoo as the recommended replacement; for fine-tuning graders it points to the fine-tuning timeline instead. The Evals guide says Evals became read-only for existing users on October 31, 2026, that existing evals content remains available during the transition window, and that the platform is scheduled to shut down on November 30, 2026. Read-only means calls that create or change evals or start runs should no longer be expected to succeed (the sources don't list which API calls already fail); from November 30 the platform, API included, shuts down, so reading evals, runs and results stops too. OpenAI's Promptfoo guide covers recreating an eval by hand in a promptfooconfig.yaml file; it does not require an OpenAI Evals export feature, and Promptfoo runs are separate from earlier OpenAI Evals runs."
+signatures:
+- /v1/evals
+- evals.create
+- evals.retrieve
+- evals.update
+- evals.list
+- evals.delete
+- evals.runs
+context: ["openai"]
+source_url: https://developers.openai.com/api/docs/deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-11-19'
+evidence:
+- Nov 30, 2026 | Evals dashboard, API, and graders for eval workflows | Read-only
+- Migrate to Promptfoo
+- {url: "https://developers.openai.com/api/docs/guides/evals.md", text: "Evals will become read-only for existing users on October 31, 2026"}
+- {url: "https://developers.openai.com/api/docs/guides/evals.md", text: "platform is scheduled to shut down on November 30, 2026"}
+- {url: "https://developers.openai.com/api/reference/resources/evals/methods/create.md", text: "api.openai.com/v1/evals"}
+fix_hint: Recreate the evals you still need in Promptfoo (a promptfooconfig.yaml with your prompts, provider, test cases and assertions), following OpenAI's Promptfoo migration guide, and remove the OpenAI Evals API calls. Save any eval results you want to keep before November 30, 2026, and re-validate recreated graders, especially LLM-as-a-judge ones, before relying on their scores.

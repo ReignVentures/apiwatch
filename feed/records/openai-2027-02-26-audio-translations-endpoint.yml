@@ -1,0 +1,29 @@
+# Written by Claude on 2026-11-19 from the deprecations page (Feature and endpoint deprecations row, notice Aug 26, 2026), the Create translation API reference (POST /audio/translations; Python client.audio.translations.create), the Speech to text guide's Translations section, and the Realtime translation guide.
+# Not a duplicate of openai-2027-02-26-transcription-models: that record signs model ids only (whisper-1 and the gpt-4o transcribe models), not the endpoint. A translations call naming model="whisper-1" on the same line is reported under both records, which is right: same date, both go.
+# Groq serves the same path and SDK shape (https://api.groq.com/openai/v1/audio/translations, client.audio.translations.create, per console.groq.com/docs/speech-to-text.md); that URL contains "openai", so it is excluded. A Groq call through the OpenAI SDK with a Groq base_url variable is still a false positive.
+# Independent review (docs/REVIEW.md) on 2026-11-19: pass. Date, severity (99 days out), summary, detail, signatures (Python client.audio.translations.create in the reference), Groq exclude and fix_hint checked against the deprecations row, the Create translation reference, the Speech to text guide and the Realtime translation guide; gpt-realtime-translate and /v1/realtime/translations are not on the deprecations page. No changes.
+id: openai-2027-02-26-audio-translations-endpoint
+vendor: OpenAI
+surface: Audio translations endpoint (/v1/audio/translations)
+kind: rest
+severity: breaking
+effective: "2027-02-26"
+summary: OpenAI shuts down /v1/audio/translations on February 26, 2027; the replacement is Realtime translation at /v1/realtime/translations, which needs a separate integration
+detail: "Notice date August 26, 2026. OpenAI's deprecations page lists /v1/audio/translations as Deprecated with a February 26, 2027 shutdown date and /v1/realtime/translations as the recommended replacement. The API reference says the endpoint supports only whisper-1, that the endpoint and model are scheduled to shut down on February 26, 2027, and that /v1/realtime/translations requires a separate integration. The Speech to text guide says the endpoint translates a completed recording into English text only, and that changing only the model ID in a /v1/audio/translations request doesn't migrate it: Realtime translation with gpt-realtime-translate needs a translation session, streamed audio input, and translation events. whisper-1 itself is covered by the transcription models record with the same date."
+signatures:
+- /v1/audio/translations
+- audio.translations.create
+exclude:
+- api.groq.com/openai/v1/audio/translations
+context: ["openai"]
+source_url: https://developers.openai.com/api/docs/deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-11-19'
+evidence:
+- Feb 26, 2027 | /v1/audio/translations | Deprecated | /v1/realtime/translations
+- Deprecated | /v1/realtime/translations | Aug 26, 2026
+- {url: "https://developers.openai.com/api/reference/resources/audio/subresources/translations/methods/create.md", text: "api.openai.com/v1/audio/translations"}
+- {url: "https://developers.openai.com/api/docs/guides/speech-to-text.md", text: "with gpt-realtime-translate at /v1/realtime/translations"}
+- {url: "https://developers.openai.com/api/docs/guides/speech-to-text.md", text: "Changing only the model ID in a /v1/audio/translations request"}
+fix_hint: Rebuild audio translation on Realtime translation (gpt-realtime-translate at /v1/realtime/translations) using OpenAI's Realtime translation guide. It streams audio into a translation session and returns translated audio and transcript deltas, so a model swap alone doesn't migrate a /v1/audio/translations call; set the session's target language and re-test on your own recordings before February 26, 2027.

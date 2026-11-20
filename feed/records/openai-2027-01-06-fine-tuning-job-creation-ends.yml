@@ -1,0 +1,31 @@
+# Written by Claude on 2026-11-19 from the deprecations page (Feature and endpoint deprecations row, notice May 7, 2026, and the "Update to OpenAI's self-serve fine-tuning" timeline it links), the Supervised fine-tuning guide, and the fine-tuning jobs API reference (POST /fine_tuning/jobs; Python client.fine_tuning.jobs.create, TypeScript client.fineTuning.jobs.create).
+# Only job creation ends; inference on fine-tuned models goes on until each base model shuts down (other records date those). So the signatures are the create call. The raw path /v1/fine_tuning/jobs is also the list-jobs path (GET), which the sources don't say stops; that line would be flagged too. exclude "/v1/fine_tuning/jobs/" keeps per-job calls (retrieve, cancel, events, checkpoints) off.
+# context "openai": other providers expose the same shapes (Mistral's SDK has client.fine_tuning.jobs.create; not confirmed from Mistral's docs, which render in the browser) and Azure OpenAI uses the same SDK with its own timeline; a file naming AzureOpenAI still opens the gate. Fine-tuning graders (/v1/fine_tuning/alpha/graders) are not signed: the timeline doesn't date them.
+# Independent review (docs/REVIEW.md) on 2026-11-19: fix: added exclude "/v1/fine_tuning/jobs?" so a list-jobs GET with a query string (the list reference's own curl form) is no longer flagged. Keeping the bare /v1/fine_tuning/jobs signature is acceptable: it is the create reference's curl form for raw-HTTP job creation, which the SDK signatures miss. A bare-path GET with no query string (or a URL constant used only for listing) still matches; that false positive is logged for docs/GAPS.md. All other fields checked against the deprecations row and fine-tuning timeline, the Supervised fine-tuning guide and the jobs reference (Python fine_tuning.jobs.create, TypeScript fineTuning.jobs.create); no other changes.
+id: openai-2027-01-06-fine-tuning-job-creation-ends
+vendor: OpenAI
+surface: Fine-tuning job creation (POST /v1/fine_tuning/jobs)
+kind: rest
+severity: breaking
+effective: "2027-01-06"
+summary: From January 6, 2027, no OpenAI organization can create new fine-tuning jobs; existing fine-tuned models keep serving inference until their base model shuts down
+detail: "Notice date May 7, 2026. OpenAI's deprecations page lists self-serve fine-tuning job creation with a January 6, 2027 date and status Restricted access, pointing to its fine-tuning timeline. That timeline stopped job creation for organizations that had never run fine-tuning (May 7, 2026) and for those with no fine-tuned model inference in the past 60 days (July 2, 2026), and says that on January 6, 2027 active existing customers will no longer be able to create new fine-tuning jobs. Inference on fine-tuned models will be disabled only when the underlying base model is deprecated. The Supervised fine-tuning guide says eligible existing customers can create training jobs until January 6, 2027, unless the base model shuts down earlier. OpenAI names no replacement for training new fine-tuned models."
+signatures:
+- fine_tuning.jobs.create
+- fineTuning.jobs.create
+- /v1/fine_tuning/jobs
+exclude:
+- /v1/fine_tuning/jobs/
+- /v1/fine_tuning/jobs?
+context: ["openai"]
+source_url: https://developers.openai.com/api/docs/deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-11-19'
+evidence:
+- Jan 6, 2027 | Self-serve fine-tuning job creation | Restricted access
+- no longer be able to create new fine-tuning jobs on this date
+- will be disabled only when the underlying base model is deprecated
+- {url: "https://developers.openai.com/api/docs/guides/supervised-fine-tuning.md", text: "create training jobs until January 6, 2027"}
+- {url: "https://developers.openai.com/api/reference/resources/fine_tuning/subresources/jobs/methods/create.md", text: "api.openai.com/v1/fine_tuning/jobs"}
+fix_hint: Run any training you still need before January 6, 2027, and remove automated job creation that would start failing then. Existing fine-tuned models keep serving inference until their base model's shutdown date on OpenAI's deprecations page, so plan to move those workloads to a current base model by that date; OpenAI names no replacement for creating new fine-tunes.

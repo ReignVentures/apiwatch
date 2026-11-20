@@ -1,0 +1,36 @@
+# Promoted from feed/drafts after independent review (docs/REVIEW.md) on 2026-11-20: fix. Facts confirmed against the changelog and Notify docs;
+# removed 'Until then the API still works' and 'plan for beta terms' (not in the source), matched the source's access wording, added the PHP form notify->v1.
+# Authored 2026-11-20 by an author agent from watch lead #65 (apiwatch watch).
+# Sources fetched with curl: the changelog entry (source_url, Nov. 18, 2026), and the Notify docs .md twins
+# https://www.twilio.com/docs/notify.md, /docs/notify/api.md, /docs/notify/api/notification-resource.md, /docs/notify/api/binding-resource.md.
+# Signatures come from those docs: base URL https://notify.twilio.com/v1, paths /v1/Services/{ServiceSid}/Notifications and /Bindings,
+# Node client.notify.v1 / Python client.notify.v1.services( / Java com.twilio.rest.notify.v1, C# Twilio.Rest.Notify.V1, Go client.NotifyV1, CLI twilio api:notify:v1.
+# Severity: shutdown 2027-10-31 is about 345 days after authoring (more than 180), so deprecation with a removal date, not breaking.
+id: twilio-2027-10-31-notify-end-of-life
+vendor: Twilio
+surface: Twilio Notify API (notify.twilio.com/v1 Services, Notifications, Bindings) and the Notify resources in Twilio SDKs and CLI
+kind: rest
+severity: deprecation
+effective: '2027-10-31'
+summary: Twilio Notify reaches end of life on October 31, 2027 (moved from January 31, 2027); after that, Notify API requests stop working
+detail: Announced Nov. 18, 2026. Twilio moved Notify's end-of-life date from January 31, 2027 to October 31, 2027. After October 31, 2027, requests to the Notify API will stop working, and push notifications and SMS sent through Notify won't reach users. Twilio's Notify docs say Twilio stopped supporting Notify in October 2022. Twilio recommends the Bulk Messaging API for SMS; for push notifications the replacement is the new Push Notifications API, which is in private beta; customers can request access.
+signatures:
+- notify.twilio.com
+- notify.v1
+- Twilio.Rest.Notify.V1
+- NotifyV1
+- api:notify:v1
+- notify->v1
+context: ["twilio"]   # notify.v1 and NotifyV1 are short; only count them in files that mention twilio
+source_url: https://www.twilio.com/en-us/changelog/twilio-notify-end-of-life-timing-update
+verified: true
+verified_by: claude
+verified_on: '2026-11-20'
+evidence:
+- Notify end of life moves to October 31, 2027
+- requests to the Notify API will stop working
+- we recommend moving to the Bulk Messaging API
+- the replacement is the new Push Notifications API, now in private beta
+- url: https://www.twilio.com/docs/notify/api.md
+  text: https://notify.twilio.com/v1
+fix_hint: Move off Notify before October 31, 2027. For SMS, send through Twilio's Bulk Messaging API. For push notifications, the replacement is the Push Notifications API, currently in private beta; customers can request access from Twilio. Remove notify.twilio.com calls and client.notify.v1 usage once migrated.
