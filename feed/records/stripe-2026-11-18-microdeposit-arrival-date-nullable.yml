@@ -1,0 +1,77 @@
+# Written by an author agent from changelog lead #69 (apiwatch watch), from the primary source page and the Stripe SDK beta CHANGELOGs only. Independent review (docs/REVIEW.md) 2026-11-21 by a fresh agent: fix (Ruby beta pin spelled 21.2.0.pre.beta, as RubyGems and Gemfile.lock write it), applied; severity silent confirmed (calls still succeed).
+# Scope: PUBLIC PREVIEW API version 2026-11-18.preview. PaymentIntent/SetupIntent next_action.verify_with_microdeposits.arrival_date becomes nullable;
+# null means the microdeposit went over an instant payment rail. The page says the Java and Go SDKs are not affected, so `files` leaves out .go/.java/.kt
+# (the Go SDK spells the field VerifyWithMicrodeposits.ArrivalDate, the same as .NET). Python's class is NextAction.VerifyWithMicrodeposit (singular) but
+# the attribute is verify_with_microdeposits, so the snake_case path covers Python, Ruby, Node and PHP; .NET is VerifyWithMicrodeposits.ArrivalDate.
+# Bare arrival_date is not a signature (payouts and other objects have one). Dict/hash reads are signed in the quoted forms only.
+# Severity: Stripe labels this breaking, but the API call still succeeds; the field returns null instead of a timestamp for instant-rail
+# microdeposits, so code that assumes a timestamp misbehaves or errors in the caller's own code. Under docs/REVIEW.md that is silent (same call as
+# stripe-2026-09-30-sepa-creditor-id-always-returned). Reviewer may disagree: .NET's DateTime -> nullable(DateTime) is a compile-time change on SDK upgrade.
+# repo_context gates on a preview API version string or the preview SDK pins the page lists (python 17.2.0b1, node 23.3.0-beta.1, ruby 21.2.0-beta.1,
+# php 23.2.0-beta.1, .NET 53.3.0-beta.1); each SDK's beta CHANGELOG (raw.githubusercontent.com, reachable) says it pins 2026-11-18.preview.
+# RubyGems spells the Ruby prerelease 21.2.0.pre.beta.1 (Gemfile.lock -> dep:rubygems:stripe@21.2.0.pre.beta.1); repo_context uses that form.
+id: stripe-2026-11-18-microdeposit-arrival-date-nullable
+vendor: Stripe
+surface: 'Stripe API 2026-11-18.preview (public preview) — PaymentIntent / SetupIntent next_action.verify_with_microdeposits.arrival_date is nullable'
+kind: rest
+severity: silent
+effective: '2026-11-18'
+summary: 'In Stripe''s public preview API version 2026-11-18.preview, PaymentIntents and SetupIntents can return null for next_action.verify_with_microdeposits.arrival_date, which was previously always a timestamp'
+detail: 'This applies only to callers on the public preview version 2026-11-18.preview, or on the preview SDKs for it (stripe-python 17.2.0b1, stripe-node 23.3.0-beta.1, stripe-ruby 21.2.0-beta.1, stripe-php 23.2.0-beta.1, Stripe.net 53.3.0-beta.1). The arrival_date property was a non-null timestamp; its type is now nullable. A null value means the microdeposit was sent over an instant payment rail, so there is no scheduled arrival date to display. Code that assumes the property always holds a timestamp needs to handle null. Stripe classes this as a breaking change; the request itself does not fail. Stripe says the Java and Go SDKs are not affected.'
+signatures:
+- verify_with_microdeposits.arrival_date
+- verify_with_microdeposits?.arrival_date
+- verify_with_microdeposits->arrival_date
+- '["verify_with_microdeposits"]["arrival_date"]'
+- '[''verify_with_microdeposits''][''arrival_date'']'
+- '[:verify_with_microdeposits][:arrival_date]'
+- VerifyWithMicrodeposits.ArrivalDate
+- VerifyWithMicrodeposits?.ArrivalDate
+context:
+- - stripe
+  - verify_with_microdeposits
+- - stripe
+  - verifywithmicrodeposits
+files:
+- '*.py'
+- '*.ipynb'
+- '*.rb'
+- '*.php'
+- '*.js'
+- '*.jsx'
+- '*.mjs'
+- '*.cjs'
+- '*.ts'
+- '*.tsx'
+- '*.mts'
+- '*.cts'
+- '*.cs'
+repo_context:
+- 0.preview
+- 1.preview
+- 2.preview
+- 3.preview
+- 4.preview
+- 5.preview
+- 6.preview
+- 7.preview
+- 8.preview
+- 9.preview
+- dep:pypi:stripe@17.2.0b
+- dep:npm:stripe@23.3.0-beta
+- dep:rubygems:stripe@21.2.0.pre.beta
+- dep:packagist:stripe/stripe-php@23.2.0-beta
+- Stripe.net" Version="53.3.0-beta
+source_url: https://docs.stripe.com/changelog/endive/2026-11-18/makes-microdeposit-arrival-dates-nullable.md
+verified: true
+verified_by: claude
+verified_on: '2026-11-21'
+evidence:
+- Update code that reads `next_action.verify_with_microdeposits.arrival_date` to handle `null`.
+- Its type is now nullable
+- 'Stripe-Version: 2026-11-18.preview'
+- url: https://raw.githubusercontent.com/stripe/stripe-python/beta/CHANGELOG.md
+  text: This release changes the pinned API version to `2026-11-18.preview`.
+- url: https://raw.githubusercontent.com/stripe/stripe-node/beta/CHANGELOG.md
+  text: This release changes the pinned API version to `2026-11-18.preview`.
+fix_hint: 'Before moving to 2026-11-18.preview (or its preview SDKs), handle a null next_action.verify_with_microdeposits.arrival_date on PaymentIntents and SetupIntents: treat null as an instant-rail microdeposit with no scheduled arrival date to display, instead of formatting or comparing it as a timestamp.'
