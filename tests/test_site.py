@@ -807,3 +807,19 @@ def test_a_rerouted_model_is_not_a_retirement():
     gone, moved = ChangeRecord(id="g-gone", **common), ChangeRecord(id="g-moved", routes_to="g-new", **common)
     assert site.retired([gone, moved], date(2026, 10, 1)) == [gone]
     assert site._kind_list([gone, moved]) == "model retirement and breaking change"
+
+
+def test_css_lets_long_tokens_wrap_at_phone_width():
+    """Long unbroken text (source URLs, dotted field paths in summaries) must wrap, not push
+    the page wider than a 320px phone. Rules live outside any @media block so they always apply."""
+    from apiwatch.site import CSS
+
+    top = CSS.split("@media (max-width: 560px)")[0]
+    rules = {sel.strip(): body for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", top)}
+    # The grid's text column must be allowed to shrink below its longest word.
+    assert "min-width: 0" in rules[".rec > div"]
+    # Body text and footer break an unbroken token only when it would overflow.
+    assert "overflow-wrap: anywhere" in rules["main, footer.site"]
+    # Code blocks keep their own horizontal scroll instead of wrapping.
+    assert "overflow-wrap: normal" in rules["pre code"]
+    assert "overflow-x: auto" in rules["pre"]

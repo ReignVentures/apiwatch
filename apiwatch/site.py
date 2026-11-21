@@ -1271,6 +1271,7 @@ a:hover { text-decoration: underline; }
 code { font: 0.9em ui-monospace, SFMono-Regular, Menlo, monospace; background: var(--card);
   border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; overflow-wrap: anywhere; }
 header.site, main, footer.site { max-width: 880px; margin: 0 auto; padding: 0 16px; }
+main, footer.site { overflow-wrap: anywhere; }
 header.site { display: flex; justify-content: space-between; align-items: center; padding-top: 20px; padding-bottom: 12px; }
 .brand { font-weight: 700; color: var(--fg); letter-spacing: -0.01em; }
 header nav a { margin-left: 16px; color: var(--muted); font-size: 14px; white-space: nowrap; }
@@ -1281,6 +1282,7 @@ h2 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; color: 
 .meta, .crumb { color: var(--muted); font-size: 14px; }
 .recs { list-style: none; padding: 0; margin: 0; border-top: 1px solid var(--line); }
 .rec { display: grid; grid-template-columns: 110px 1fr; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.rec > div { min-width: 0; }
 .rec time { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; padding-top: 2px; }
 .rec .vendor { font-weight: 600; color: var(--fg); margin-right: 4px; }
 .rec .summary { display: block; margin-top: 4px; color: var(--fg); }
