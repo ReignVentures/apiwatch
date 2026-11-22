@@ -1,0 +1,27 @@
+# Authored by Claude on 2026-11-22 from the primary source: xAI release notes (November entry "grok-build-0.1 end of life"),
+# plus the xAI Models page ("Which model should I choose?") and the Grok 4.5 model page (aliases). Independent review (docs/REVIEW.md) on 2026-11-22 by a separate fresh agent: fix, applied (detail notes the stale
+# Models page listing; fix_hint price comparison made explicit and an unsupported reasoning-effort caveat removed). check ok.
+# Severity breaking: the release note says the model "is no longer served on the API" and names no reroute, so no routes_to.
+# The release note names no replacement; the fix_hint uses the Models page, which says to use Grok 4.7 for code.
+# grok-build-latest is not a signature: the Grok 4.5 page lists it as an alias of grok-4.5, not of grok-build-0.1.
+# No exclude: token-aware matching does not hit grok-build-latest, grok-build, grok-build-0.10 or grok-build-0.2 with this signature (checked with attribute.scan).
+# Note: on 2026-11-22 the Models page pricing table and the /developers/models/grok-build-0.1 page still list grok-build-0.1.
+id: xai-2026-11-19-grok-build-0-1-end-of-life
+vendor: xAI
+surface: coding model grok-build-0.1
+kind: model
+severity: breaking
+effective: "2026-11-19"
+summary: grok-build-0.1 reached end of life on November 19, 2026 and is no longer served on the xAI API
+detail: "xAI's release notes (November entry) say grok-build-0.1 reached end of life on November 19, 2026 and is no longer served on the API. They do not say requests are routed to another model, and they do not describe the error returned. The entry names no replacement; xAI's Models page says to use Grok 4.7 for everything outside audio, image and video, including code. grok-build-latest is not affected by this entry: xAI's docs list it as an alias of grok-4.5. grok-code-fast-1, which has redirected to grok-build-0.1 since May 15, 2026, is covered by the May 15 retirement record. As of November 22, 2026, xAI's Models page pricing table and the grok-build-0.1 model page still list the model; the release note is the dated statement of end of life."
+signatures: ["grok-build-0.1"]
+source_url: "https://docs.x.ai/developers/release-notes"
+verified: true
+verified_by: claude
+verified_on: "2026-11-22"
+evidence:
+  - "grok-build-0.1 end of life"
+  - "reached end of life on November 19, 2026"
+  - "is no longer served on the API"
+  - {url: "https://docs.x.ai/developers/models", text: "including code, use Grok 4.7"}
+fix_hint: "Change the model to a served model. xAI's Models page recommends grok-4.7 for code; it is priced higher than grok-build-0.1 was ($2 / $6 vs $1 / $2 per 1M input / output tokens below 200k prompt tokens), so check cost after switching. Don't switch to grok-build-latest expecting the same model: xAI lists it as an alias of grok-4.5."
