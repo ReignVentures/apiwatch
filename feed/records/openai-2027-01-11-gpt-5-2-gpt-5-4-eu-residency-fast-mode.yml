@@ -1,0 +1,63 @@
+# Independent review (docs/REVIEW.md) on 2026-11-22: fix: kind model -> rest (this ends a tier for one API feature combination, not the models; kind model made the site and MCP say "gpt-5.4 stops working" and would list it as a retired model; the existing exclude list keeps -nano/-pro/-cyber/-codex/-chat-latest siblings out); context adds the SDK constants servicetierpriority, servicetierfast (Go ResponseNewParamsServiceTierPriority) and servicetier.priority, servicetier.fast (Java ResponseCreateParams.ServiceTier.PRIORITY); repo_context adds Python OpenAI(data_residency="eu") and Java DataResidency.EU (official SDK options); fix_hint notes service_tier auto also follows the project setting (API reference). Date, severity, summary, detail, evidence and excluded ids checked against the deprecations page, Data residency and Fast mode guides and the service_tier references.
+# Written by Claude on 2026-11-22 from the deprecations page (Feature and endpoint deprecations row, shutdown Jan 11, 2027, notice Nov 18, 2026), the Data residency guide (regional domain prefixes, per-request residency SDK examples, eligible snapshots), the Fast mode guide (formerly Priority processing), and the Responses and Chat Completions create references (service_tier).
+# What happens on January 11: the row's column is "Shutdown date" and the status is Deprecated, but no OpenAI page says whether such a request then errors or is served at Standard processing (the changelog has no entry for it; the Fast mode FAQ on help.openai.com doesn't mention GPT-5.x with EU residency). Severity is breaking under docs/REVIEW.md (dated retirement within 180 days); the detail says the outcome isn't stated.
+# Scope: the change applies only when all three hold: one of these models, EU data residency, and Fast mode. Signatures are the model ids (kind rest after review: the exclude list keeps gpt-5.4 off gpt-5.4-nano/-pro/-cyber; gpt-5.4-mini is its own signature; snapshots like gpt-5.4-2026-03-05 match).
+#   repo_context = EU residency as code or config expresses it, per the Data residency guide: the eu.api.openai.com domain (Python base_url, curl, a .env OPENAI base URL), TypeScript withOptions({ dataResidency: "eu" }), Ruby with_options(data_residency: :eu), Go option.DataResidencyEU, and (added in review, from the official SDKs) Python OpenAI(data_residency="eu") and Java DataResidency.EU. Repo-wide, not per file, because the base URL usually lives in config away from the call.
+#   context = the calling file sets service_tier to fast or priority (quoted values; Ruby symbols; Go/Java/.NET ServiceTier). Unquoted "fast" would open the gate on FastAPI files.
+# Known misses: a project whose Project Service Tier setting is Fast sends requests without service_tier (or with "auto") in Fast mode, which code can't show; EU residency injected only at deploy time (an env var not in the repo); model ids or tier values held in another file. Known false positives: a repo with both EU and global clients where a non-EU call uses one of these models in Fast mode; a file that uses Fast mode on another model and Standard on one of these; a file that sets service_tier to default but holds an unrelated "fast" or "priority" string (e.g. a queue name).
+# exclude: ids other records date differently (gpt-5.2-codex, gpt-5.2-chat-latest, gpt-5.4-cyber, gpt-5.4-nano) and the pro models the row doesn't name; tests/test_records.py scans without kind, where a stem matches -suffix siblings.
+id: openai-2027-01-11-gpt-5-2-gpt-5-4-eu-residency-fast-mode
+vendor: OpenAI
+surface: Fast mode (service_tier fast or priority) for GPT-5.2, GPT-5.4 and GPT-5.4 mini with EU data residency
+kind: rest
+severity: breaking
+effective: "2027-01-11"
+summary: OpenAI ends Fast mode (service_tier fast or priority) for GPT-5.2, GPT-5.4 and GPT-5.4 mini with EU data residency on January 11, 2027; the same models stay available in the EU with Standard processing
+detail: "Notice date November 18, 2026. OpenAI's deprecations page lists GPT-5.2, GPT-5.4, and GPT-5.4 mini with EU data residency and service_tier fast or priority as Deprecated, with a January 11, 2027 shutdown date. The recommended replacement is the same models with EU data residency and Standard processing (service_tier default), or the GPT-6.2 model family. Only this combination is listed: the models themselves, and Fast mode outside EU data residency, are not part of this row. OpenAI does not say whether such requests will return an error or be served at Standard processing after that date. Fast mode is the former Priority processing, and service_tier priority and fast select the same mode. EU data residency is a project setting used through the eu.api.openai.com domain. The Data residency guide says GPT-6.2 Astra and GPT-6.2 Sol support EU data residency with Standard, Fast, and Batch processing."
+signatures:
+- gpt-5.2
+- gpt-5.2-2025-12-11
+- gpt-5.4
+- gpt-5.4-2026-03-05
+- gpt-5.4-mini
+- gpt-5.4-mini-2026-03-17
+exclude:
+- gpt-5.2-codex
+- gpt-5.2-chat-latest
+- gpt-5.2-pro
+- gpt-5.4-cyber
+- gpt-5.4-nano
+- gpt-5.4-pro
+context:
+- [service_tier, '"priority"']
+- [service_tier, "'priority'"]
+- [service_tier, ':priority']
+- [service_tier, '"fast"']
+- [service_tier, "'fast'"]
+- [service_tier, ':fast']
+- [servicetier, '"priority"']
+- [servicetier, '"fast"']
+- servicetierpriority
+- servicetierfast
+- servicetier.priority
+- servicetier.fast
+repo_context:
+- eu.api.openai.com
+- 'dataresidency: "eu"'
+- "dataresidency: 'eu'"
+- 'data_residency: :eu'
+- dataresidencyeu
+- 'data_residency="eu"'
+- "data_residency='eu'"
+- dataresidency.eu
+source_url: https://developers.openai.com/api/docs/deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-11-22'
+evidence:
+- Jan 11, 2027 | GPT-5.2, GPT-5.4, and GPT-5.4 mini
+- "with EU data residency and service_tier: fast or priority"
+- "EU data residency and Standard processing (service_tier: default)"
+- {url: "https://developers.openai.com/api/docs/guides/data-residency.md", text: "such as eu.api.openai.com for Europe"}
+- {url: "https://developers.openai.com/api/docs/guides/fast-mode.md", text: 'use either service_tier: "priority" or service_tier: "fast"'}
+fix_hint: Before January 11, 2027, send these EU data residency requests with Standard processing (service_tier "default") on the same models, or move them to the GPT-6.2 model family (gpt-6.2-astra or gpt-6.2-sol), which OpenAI lists as supporting EU data residency with Fast mode. Also check the project's Service Tier setting, since requests that omit service_tier or send auto use it. Re-test on your own workload before switching models.
