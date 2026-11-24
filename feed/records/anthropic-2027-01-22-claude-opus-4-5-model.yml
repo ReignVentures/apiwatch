@@ -1,0 +1,23 @@
+# Authored from lead #72 on 2026-11-24 from the primary source (model-deprecations.md, fetched 2026-11-24). Independent review (docs/REVIEW.md) on 2026-11-24 by a separate fresh agent: pass, no corrections.
+# Alias claude-opus-4-5 cited from the same page ("This retirement includes claude-opus-4-5"). No other record lists a claude-opus-4-5* id, so no exclude is needed.
+id: anthropic-2027-01-22-claude-opus-4-5-model
+vendor: Anthropic
+surface: model claude-opus-4-5-20251101 (alias claude-opus-4-5)
+kind: model
+severity: breaking
+effective: '2027-01-22'
+summary: Anthropic will retire Claude Opus 4.5 (claude-opus-4-5-20251101) on the Claude API on January 22, 2027; requests to it will fail after that date.
+detail: Announced November 23, 2026. The retirement includes the undated id claude-opus-4-5. The dates apply to Anthropic-operated platforms (Claude API, Claude Platform on AWS, Claude Models on Google Cloud (Anthropic managed), Microsoft Foundry), where requests to retired models fail; Amazon Bedrock and Claude Models on Google Cloud (Google managed) set their own retirement schedules. The recommended replacement is claude-opus-5-5.
+signatures:
+- claude-opus-4-5-20251101
+- claude-opus-4-5
+source_url: https://platform.claude.com/docs/en/about-claude/model-deprecations
+verified: true
+verified_by: claude
+verified_on: '2026-11-24'
+evidence:
+- claude-opus-4-5-20251101
+- January 22, 2027
+- On November 23, 2026, Anthropic notified developers using Claude Opus 4.5
+- This retirement includes claude-opus-4-5, the same model's ID without a date.
+fix_hint: Move the model id to config and switch to claude-opus-5-5 before January 22, 2027 (see Anthropic's Claude Opus 5.5 migration guide, "Migrating from Claude Opus 4.5 or earlier"); re-run your evals and add a startup check that the configured model resolves.
