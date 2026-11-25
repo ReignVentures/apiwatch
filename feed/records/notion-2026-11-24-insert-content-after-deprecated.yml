@@ -1,0 +1,44 @@
+# Authored 2026-11-25 from a changelog lead (Notion changelog, November 24, 2026, "Insert markdown next to a block"), from the
+# primary sources fetched 2026-11-25: the Notion changelog (https://developers.notion.com/page/changelog.md; the entry sits
+# under "November 24, 2026", above the November 18 entry), the Update page markdown reference
+# (https://developers.notion.com/reference/update-page-markdown.md: "The `after` parameter is deprecated ... On the next
+# Notion-Version, `after` is read as an `after_content` anchor"; OpenAPI marks insert_content.after `deprecated: true`;
+# sending both after and position returns validation_error), and the official SDK source at v5.32.0
+# (https://raw.githubusercontent.com/makenotion/notion-sdk-js/v5.32.0/src/api-endpoints/pages.ts: insert_content is
+# `{ content: string; /** @deprecated */ after?: ...; position?: ... }` on the page markdown body).
+# Not yet independently reviewed (docs/REVIEW.md).
+# Severity: deprecation. The ellipsis-based insert_content.after still works on current Notion-Versions, but Notion labels it
+# deprecated and tells callers to use position with after_content. The reference says the next Notion-Version (name and date
+# not announced) reads `after` as an after_content anchor instead of an ellipsis selection; no removal date. Not breaking:
+# nothing is dated. effective = the announcement date.
+# Signatures: the deprecated `after` key itself, as written in a request body: `after:` (JS/TS object key), `"after":` (JSON,
+# Python dict, quoted JS key) and `'after':` (Python dict). `after` alone is far too generic, so every hit needs a file that
+# mentions both "notion" (incl. @notionhq/client, notion_client) and "insert_content". Token-aware matching keeps
+# `insert_after:` and "after_content" from hitting. No exclude is needed for calls already using position: those carry no
+# `after` key (Notion rejects a request with both), so their lines never match; insert_content, updateMarkdown and /markdown
+# lines are not signatures here (updateMarkdown and /markdown belong to notion-2026-10-30-enhanced-markdown-v1-deprecated).
+# Known limits: a key built without a literal (`{ content, after }` shorthand, dict(content=..., after=...), `**opts`, a
+# variable key) is missed, as is a body built in a file that never says insert_content. An unrelated `after:` key (a
+# pagination cursor, a timer option) in a file that also mentions notion and insert_content is reported.
+# 2026-11-25 independent review (docs/REVIEW.md, fresh agent that did not write it): pass, no edits. apiwatch check ok.
+id: notion-2026-11-24-insert-content-after-deprecated
+vendor: Notion
+surface: Notion API Update page markdown (PATCH /v1/pages/:page_id/markdown) — insert_content.after parameter
+kind: rest
+severity: deprecation
+effective: "2026-11-24"
+summary: Notion deprecated the ellipsis-based insert_content.after parameter on Update page markdown; use position with after_content (requires markdown_version v2)
+detail: On November 24, 2026, Notion added after_content and before_content positions to insert_content on Update page markdown (PATCH /v1/pages/:page_id/markdown) and deprecated the ellipsis-based insert_content.after parameter, telling callers to use position with after_content instead. after takes an ellipsis selection ("start text...end text") and inserts after the matched range, which can land partway into a block; an after_content anchor inserts after the block the anchor ends in, at that block's nesting level. after still works on current Notion-Versions and no removal date has been announced, but on the next Notion-Version (name and date not yet announced) after is read as an after_content anchor. Anchored positions require markdown_version "v2". Sending both after and position returns a validation_error. @notionhq/client v5.32.0 types the anchored positions and marks after as deprecated.
+signatures: ["after:", "\"after\":", "'after':"]
+context: [["notion", "insert_content"]]
+source_url: "https://developers.notion.com/page/changelog"
+verified: true
+verified_by: claude
+verified_on: "2026-11-25"
+evidence:
+  - "November 24, 2026"
+  - "Insert markdown next to a block"
+  - "The ellipsis-based `insert_content.after` parameter is now deprecated."
+  - "Use `position` with `after_content` instead."
+  - {url: "https://developers.notion.com/reference/update-page-markdown.md", text: "On the next Notion-Version, `after` is read as an `after_content` anchor."}
+fix_hint: 'Replace insert_content.after with insert_content.position set to {"type": "after_content", "anchor": "..."}, where the anchor is existing page content that matches exactly one place and starts where a block starts (including its leading Markdown syntax); it inserts after the block the anchor ends in, not partway into a block. Anchored positions require markdown_version "v2" on the request (with v1 they return a validation_error), so move the call to Notion-flavored Markdown first and copy the anchor from Retrieve page markdown in the same markdown_version. Never send after and position together. @notionhq/client v5.32.0 or later types position.'

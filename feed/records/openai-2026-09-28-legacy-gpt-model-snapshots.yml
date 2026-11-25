@@ -2,6 +2,8 @@
 # 2026-10-27 night shift: the deprecations page no longer lists fine-tuned babbage-002 or davinci-002 under October 23, 2026, and gives no date for them. Detail and fix_hint no longer point to that date; ft: ids stay excluded because the page doesn't date them. Fresh review: fix (past tense, fine-tune inference tied to the base model), applied.
 # 2026-11-14 night shift: OpenAI restructured the deprecations page; the "2025-09-26: Legacy GPT model snapshots" heading and the ISO date "2026-09-28" are gone. Evidence (was 6 items) re-quoted as the four Past deprecations rows (Sep 28, 2026 | id | gpt-5.6-terra) plus the fine-tuning line. Detail no longer mentions the batch heading; it cites the notice date in the row (Sep 26, 2025). Ids, date and replacement unchanged; gpt-5.6-terra is not scheduled to retire on the page. verified reset to false pending review.
 # 2026-11-14 independent review (docs/REVIEW.md, fresh agent): pass. apiwatch check ok.
+# 2026-11-25 night shift: the page reworded the fine-tuning line ("until the base models are deprecated" is gone); it now says inference on each existing fine-tuned model continues "until OpenAI retires its underlying base model". Detail and that evidence string re-quoted; nothing else changed. verified reset to false pending review.
+# 2026-11-25 independent review (docs/REVIEW.md, fresh agent): pass. apiwatch check ok.
 id: openai-2026-09-28-legacy-gpt-model-snapshots
 vendor: OpenAI
 surface: models gpt-3.5-turbo-instruct, babbage-002, davinci-002, gpt-3.5-turbo-1106
@@ -9,7 +11,7 @@ kind: model
 severity: breaking
 effective: '2026-09-28'
 summary: OpenAI shut down gpt-3.5-turbo-instruct, gpt-3.5-turbo-1106, babbage-002 and davinci-002 on September 28, 2026; the replacement is gpt-5.6-terra.
-detail: Announced September 26, 2025. OpenAI's deprecations page lists a September 28, 2026 shutdown for gpt-3.5-turbo-instruct, babbage-002, davinci-002 and gpt-3.5-turbo-1106, with gpt-5.6-terra as the listed replacement for all four. The page gives no explicit date for fine-tuned babbage-002 and davinci-002 models, but says inference on fine-tuned models continues only until the base models are deprecated.
+detail: Announced September 26, 2025. OpenAI's deprecations page lists a September 28, 2026 shutdown for gpt-3.5-turbo-instruct, babbage-002, davinci-002 and gpt-3.5-turbo-1106, with gpt-5.6-terra as the listed replacement for all four. The page gives no explicit date for fine-tuned babbage-002 and davinci-002 models, but says inference on each existing fine-tuned model continues until OpenAI retires its underlying base model.
 signatures:
 - gpt-3.5-turbo-instruct
 - gpt-3.5-turbo-1106
@@ -18,13 +20,13 @@ signatures:
 source_url: https://developers.openai.com/api/docs/deprecations
 verified: true
 verified_by: claude
-verified_on: '2026-11-14'
+verified_on: '2026-11-25'
 evidence:
 - Sep 28, 2026 | gpt-3.5-turbo-instruct | gpt-5.6-terra | Sep 26, 2025
 - Sep 28, 2026 | babbage-002 | gpt-5.6-terra
 - Sep 28, 2026 | davinci-002 | gpt-5.6-terra
 - Sep 28, 2026 | gpt-3.5-turbo-1106 | gpt-5.6-terra
-- until the base models are deprecated
+- until OpenAI retires its underlying base model
 fix_hint: Switch to gpt-5.6-terra and re-run your evals. This record doesn't flag fine-tunes built on babbage-002 or davinci-002 (ft:babbage-002:…, ft:davinci-002:…) because the page doesn't date them, but it ties fine-tune inference to the base model, so expect them to be unavailable too.
 exclude:
 - ft:babbage-002
