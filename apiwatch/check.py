@@ -3,7 +3,8 @@
 Every published record carries `evidence`, short verbatim facts (model ids, dates, tool names) that
 support it. This fetches each source page and looks for them. It's the automated half of the review in
 docs/REVIEW.md; the other half is an independent read of the source. Run daily in CI: when a vendor
-edits or removes a page, the record stops passing and comes off the site until it's reviewed again.
+edits or removes a page, the record stops passing and is left off the site until its strings are back
+(`apiwatch site --check-results`). A fetch error on a page that isn't gone is reported but does not drop the record.
 
 Network only; no LLM.
 """

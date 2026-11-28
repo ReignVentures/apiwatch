@@ -56,3 +56,10 @@ def test_export_refuses_a_readme_without_the_marker(tmp_path):
     readme.write_text("# apiwatch\n")
     with pytest.raises(SystemExit):
         exp.fill_readme(readme, date(2026, 10, 6))
+
+
+def test_public_readme_says_how_a_record_drops_off_and_comes_back():
+    readme = (ROOT / "public" / "README.md").read_text()
+    assert ("If a vendor edits or removes the page and the latest check finds any of the quoted strings gone, "
+            "the record is left off the site until they are back.") in readme
+    assert "comes off the site" not in readme and "until it is reviewed again" not in readme

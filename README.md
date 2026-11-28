@@ -85,7 +85,7 @@ required parameters, rewritten descriptions, changed hints. They never return a 
 
 ## How records are verified
 
-A record is published only after a reviewer that did not write it checks every field against the vendor's primary source, and an automated check confirms the quoted evidence is still on that page. The full rules are in [docs/REVIEW.md](docs/REVIEW.md). If a vendor edits or removes the page, the record comes off the site until it is reviewed again.
+A record is published only after a reviewer that did not write it checks every field against the vendor's primary source, and an automated check confirms the quoted evidence is still on that page. The full rules are in [docs/REVIEW.md](docs/REVIEW.md). If a vendor edits or removes the page and the latest check finds any of the quoted strings gone, the record is left off the site until they are back.
 
 Found a change we missed, or a record that's wrong? Open an issue with a link to the vendor's page.
 

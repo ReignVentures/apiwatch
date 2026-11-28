@@ -215,7 +215,7 @@ def _page(title: str, body: str, depth: int = 0, up: str | None = None, descript
 </main>
 <footer class="site"><p>Records summarize vendor changes in our own words and link the vendor's primary source.
 Each one is reviewed against that source before it's published, and its key facts are re-checked against the source daily;
-a record whose source no longer supports it comes off the site. Reviews are AI-assisted: confirm details that matter before acting.</p>
+a record is left off the site while the latest check finds any of its quoted strings missing from its source. Reviews are AI-assisted: confirm details that matter before acting.</p>
 <p class="links"><a href="{up}how-it-works.html">How it works</a> · <a href="{up}pro/">apiwatch Pro</a> · <a href="{up}terms.html">Terms</a> · <a href="{up}privacy.html">Privacy</a> ·
 <a href="mailto:{PRO_EMAIL}">{PRO_EMAIL}</a> · © Reign Ventures LLC</p></footer>
 </body>

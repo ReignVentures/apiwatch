@@ -823,3 +823,17 @@ def test_css_lets_long_tokens_wrap_at_phone_width():
     # Code blocks keep their own horizontal scroll instead of wrapping.
     assert "overflow-wrap: normal" in rules["pre code"]
     assert "overflow-x: auto" in rules["pre"]
+
+
+def test_footer_says_how_a_record_drops_off_and_comes_back(tmp_path):
+    # The build leaves out a record only while that day's check finds its quoted strings missing; it is
+    # back when they reappear. No page says it "comes off" or waits on another review (GAPS 2026-10-24).
+    build(tmp_path)
+    out = tmp_path / "site"
+    pages = list(out.rglob("*.html"))
+    assert pages
+    for page in pages:
+        html = page.read_text()
+        assert ("a record is left off the site while the latest check finds any of its quoted strings missing "
+                "from its source.") in html, page
+        assert "comes off the site" not in html, page
